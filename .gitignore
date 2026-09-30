@@ -1,0 +1,45 @@
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Node.js e React Native (Frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.watchmanconfig
+
+# Android
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+frontend/android/local.properties
+*.keystore
+*.jks
+
+# iOS / Xcode
+frontend/ios/Pods/
+frontend/ios/build/
+frontend/ios/Index/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.pbxuser
+!default.pbxuser
+
+# Python e FastAPI (Backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Segurança e Variáveis de Ambiente
+.env
+.env.local
+.env.development
+.env.production
+*.pem
+
+!.env.example
