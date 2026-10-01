@@ -1,0 +1,28 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint:
+    name: Code Quality (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Dependências
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Rodar Linter (ESLint)
+        working-directory: ./frontend
+        run: npm run lint
