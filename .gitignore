@@ -43,3 +43,39 @@ env/
 *.pem
 
 !.env.example
+
+# Propriedades Android Studio local
+frontend/android/local.properties
+frontend/android/.gradle/
+frontend/android/build/
+
+# IDEs e Editores
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# BD local
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Logs de Testes
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+
+# Certificados iOS
+*.p12
+*.mobileprovision
+*.cer
+
+# Caches Nativos
+frontend/.bundle/
+frontend/vendor/bundle/
+frontend/android/.kotlin/
+frontend/android/app/.cxx/
