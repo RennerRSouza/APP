@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yolo_backend_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
