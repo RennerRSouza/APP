@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0.0",
+  "id": "event_rental_inventory_photo_count",
+  "configuration_status": "requires_calibration",
+  "execution": {
+    "mode": "offline",
+    "input_type": "single_photo",
+    "tracking_enabled": false,
+    "network_required": false
+  },
+  "model": {
+    "runtime": "tflite",
+    "source_model": "event-rental-inventory",
+    "source_version": 11,
+    "asset_path": null,
+    "input_specification": "read_from_exported_model",
+    "output_decoder": "match_exported_model",
+    "class_id_mapping": "read_from_export_metadata",
+    "confidence_thresholds": {
+      "Black-Fold-Table": null,
+      "Brown-Fold-Table": null,
+      "table_joint": null
+    }
+  },
+  "classes": {
+    "table_objects": [
+      "Black-Fold-Table",
+      "Brown-Fold-Table"
+    ],
+    "primary_counting_evidence": "table_joint",
+    "alternative_evidence": {
+      "class_name": "side_joint",
+      "enabled": false,
+      "requires_validated_model": true
+    }
+  },
+  "coordinates": {
+    "reference": "orientation_corrected_original_photo",
+    "normalized_range": [0.0, 1.0],
+    "detection_anchor": "box_center",
+    "preserve_crop_to_original_transform": true,
+    "crop_edge_is_original_image_edge": false
+  },
+  "pipeline": [
+    "prepare_photo",
+    "detect_full_photo",
+    "find_rows",
+    "refine_row_crops",
+    "merge_detection_evidence",
+    "pair_joints",
+    "resolve_partial_tables",
+    "associate_table_objects",
+    "count_unique_tables"
+  ],
+  "row_detection": {
+    "method": "geometric_grouping",
+    "separate_axis_per_row": true,
+    "longitudinal_axis": "table_sequence_direction",
+    "transverse_axis": "across_row_width",
+    "orientation_tolerance_degrees": null,
+    "minimum_supporting_detections": null,
+    "maximum_longitudinal_gap_in_local_row_widths": null,
+    "on_insufficient_evidence": "request_manual_row_region"
+  },
+  "row_refinement": {
+    "enabled": true,
+    "operation": "crop_then_infer",
+    "crop_margin_in_local_row_widths": null,
+    "maximum_additional_inference_passes_per_row": 1,
+    "preserve_aspect_ratio": true,
+    "preserve_original_image_boundaries": true
+  },
+  "evidence_merging": {
+    "merge_full_photo_and_crop_detections": true,
+    "matching_space": "original_photo",
+    "same_class_required": true,
+    "maximum_center_distance_in_joint_sizes": null,
+    "retain_detection_provenance": true
+  },
+  "joint_pairing": {
+    "class_name": "table_joint",
+    "pair_size": 2,
+    "tables_per_pair": 1,
+    "method": "minimum_cost_disjoint_matching",
+    "geometry": {
+      "same_longitudinal_position_required": true,
+      "transverse_separation_required": true,
+      "perspective_aware": true,
+      "maximum_longitudinal_offset_in_local_row_widths": null,
+      "minimum_transverse_separation_in_local_row_widths": null,
+      "maximum_transverse_separation_in_local_row_widths": null
+    },
+    "constraints": {
+      "same_row_required": true,
+      "each_joint_used_at_most_once": true,
+      "reject_ambiguous_matches": true,
+      "minimum_match_score_margin": null
+    }
+  },
+  "partial_tables": {
+    "enabled": true,
+    "tables_per_supported_single_joint": 1,
+    "requirements": {
+      "joint_is_unpaired": true,
+      "row_membership_is_supported": true,
+      "table_truncation_at_original_boundary_is_supported": true
+    },
+    "original_boundary_margin_normalized": null,
+    "truncation_evidence_method": null,
+    "unpaired_joint_alone_is_sufficient": false,
+    "interior_unpaired_joint_policy": "mark_uncertain"
+  },
+  "table_association": {
+    "associate_whole_table_detections_with_joint_hypotheses": true,
+    "count_associated_evidence_once": true,
+    "whole_table_without_joint_policy": "mark_uncertain",
+    "type_assignment": "associated_whole_table_class",
+    "type_without_supporting_detection": "unknown",
+    "conflicting_type_policy": "unknown"
+  },
+  "counting": {
+    "unit": "table",
+    "count_unique_table_hypotheses": true,
+    "include_valid_joint_pairs": true,
+    "include_supported_boundary_partial_tables": true,
+    "infer_tables_from_empty_spacing": false,
+    "fractional_table_counts": false,
+    "uncertain_candidates_in_identified_total": false,
+    "missing_evidence_result": "inconclusive"
+  },
+  "output": {
+    "include_total_identified": true,
+    "include_counts_by_row": true,
+    "include_counts_by_type": true,
+    "include_unknown_type_count": true,
+    "include_uncertain_candidates": true,
+    "include_evidence_per_table": true,
+    "display_boxes": false,
+    "optional_debug_geometry": true,
+    "claim_complete_inventory": false
+  },
+  "validation": {
+    "require_calibration_before_production": true,
+    "reject_missing_required_parameters": true,
+    "require_valid_model_asset": true,
+    "require_matching_class_metadata": true
+  }
+}
