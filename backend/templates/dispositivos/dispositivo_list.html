@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Dispositivos Móveis | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Dispositivos Móveis Homologados</h1>
+    <p class="text-muted mb-0">Controle de autorização e segurança de smartphones que sincronizam inventários (UC05)</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Modelo do Aparelho</th>
+            <th>UUID do Dispositivo (Header X-Device-UUID)</th>
+            <th>Status de Segurança</th>
+            <th class="text-end pe-3">Ação de Controle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in dispositivos %}
+            <tr>
+              <td class="ps-3 fw-bold">
+                <i class="bi bi-phone text-primary me-2"></i> {{ d.modelo|default:"Dispositivo Android/iOS" }}
+              </td>
+              <td>
+                <code>{{ d.uuid_dispositivo }}</code>
+              </td>
+              <td>
+                {% if d.status_autorizacao == 'AUTORIZADO' %}
+                  <span class="badge bg-success">
+                    <i class="bi bi-shield-check"></i> Autorizado
+                  </span>
+                {% elif d.status_autorizacao == 'BLOQUEADO' %}
+                  <span class="badge bg-danger">
+                    <i class="bi bi-shield-slash"></i> Bloqueado (HTTP 403)
+                  </span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <form method="post" action="{% url 'dispositivo_status' d.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  {% if d.status_autorizacao == 'AUTORIZADO' %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Bloquear sincronizações deste aparelho">
+                      <i class="bi bi-slash-circle"></i> Bloquear Aparelho
+                    </button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Liberar sincronizações deste aparelho">
+                      <i class="bi bi-check-circle"></i> Homologar Aparelho
+                    </button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-5 text-muted">
+                <i class="bi bi-phone text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-2">Nenhum dispositivo sincronizado ainda</h5>
+                <p class="text-muted small mb-0">Quando os operadores realizarem a primeira contagem no aplicativo móvel, seus aparelhos serão homologados aqui automaticamente.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

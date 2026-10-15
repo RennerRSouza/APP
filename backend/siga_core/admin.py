@@ -12,7 +12,7 @@ from .models import (
 class FuncionarioInline(admin.StackedInline):
     model = Funcionario
     can_delete = False
-    verbose_name_plural = "Dados de Funcionário CLT"
+    verbose_name_plural = "Dados do Funcionário"
 
 
 class TerceirizadoInline(admin.StackedInline):
@@ -43,9 +43,9 @@ class EmpresaAdmin(admin.ModelAdmin):
 
 @admin.register(ClasseAtivo)
 class ClasseAtivoAdmin(admin.ModelAdmin):
-    list_display = ('nome_classe', 'codigo_yolo', 'categoria', 'empresa')
+    list_display = ('nome_classe', 'categoria', 'empresa')
     list_filter = ('empresa', 'categoria')
-    search_fields = ('nome_classe', 'codigo_yolo')
+    search_fields = ('nome_classe', 'descricao')
 
 
 @admin.register(RegraOperacionalMobile)

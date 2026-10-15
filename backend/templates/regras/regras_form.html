@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Regras Operacionais | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Políticas Operacionais do Mobile (IA)</h1>
+    <p class="text-muted mb-0">Parametrização da tolerância de erro da IA e margens de edição manual por perfil</p>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="row g-4 mb-4">
+    <!-- Regras para Funcionários -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100 border-top border-success border-4">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0 text-success">
+            <i class="bi bi-person-check"></i> Regra para Funcionários
+          </h5>
+          <small class="text-muted">Perfil de confiança interna com maior margem de flexibilidade</small>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tolerância de Erro da IA (%)</label>
+            {{ form_func.tolerancia_erro_ia_pct }}
+            <div class="form-text">Padrão: 10.0%. Variações acima deste valor disparam auditoria.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Limite Máximo de Edição Manual (%)</label>
+            {{ form_func.limite_edicao_manual_pct }}
+            <div class="form-text">Padrão sugerido: 20.0%. Variações maiores são bloqueadas no mobile.</div>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            {{ form_func.exige_justificativa }}
+            <label class="form-check-label fw-semibold" for="{{ form_func.exige_justificativa.id_for_label }}">
+              Exigir Justificativa Obrigatória em Divergências
+            </label>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small text-muted">Horário Inicial</label>
+              {{ form_func.horario_inicio }}
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-muted">Horário Limite</label>
+              {{ form_func.horario_fim }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regras para Terceirizados -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100 border-top border-warning border-4">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-shield-exclamation text-warning"></i> Regra para Terceirizados
+          </h5>
+          <small class="text-muted">Perfil com controle estrito e limite reduzido de alteração manual</small>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tolerância de Erro da IA (%)</label>
+            {{ form_terc.tolerancia_erro_ia_pct }}
+            <div class="form-text">Padrão: 10.0%. Variações acima deste valor disparam auditoria.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Limite Máximo de Edição Manual (%)</label>
+            {{ form_terc.limite_edicao_manual_pct }}
+            <div class="form-text">Padrão sugerido: 5.0%. Terceirizados possuem margem restrita de ajuste.</div>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            {{ form_terc.exige_justificativa }}
+            <label class="form-check-label fw-semibold" for="{{ form_terc.exige_justificativa.id_for_label }}">
+              Exigir Justificativa Obrigatória em Divergências
+            </label>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small text-muted">Horário Inicial</label>
+              {{ form_terc.horario_inicio }}
+            </div>
+            <div class="col-6">
+              <label class="form-label small text-muted">Horário Limite</label>
+              {{ form_terc.horario_fim }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
+      <i class="bi bi-check-circle"></i> Salvar Políticas Operacionais
+    </button>
+  </div>
+</form>
+{% endblock %}
+

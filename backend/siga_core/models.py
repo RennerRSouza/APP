@@ -44,12 +44,19 @@ class Funcionario(models.Model):
 
 
 class Terceirizado(models.Model):
+    class TipoContrato(models.TextChoices):
+        DIARIA = 'DIARIA', 'Por Diária / Evento'
+        TEMPORARIO = 'TEMPORARIO', 'Temporário (Meses)'
+        ANUAL = 'ANUAL', 'Contrato Anual'
+
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True, related_name='perfil_terceirizado')
     empresa_prestadora = models.CharField(max_length=150)
+    tipo_contrato = models.CharField(max_length=20, choices=TipoContrato.choices, default=TipoContrato.TEMPORARIO)
+    dias_acesso_ano = models.PositiveIntegerField(default=365, help_text="Limite de dias de acesso/ano autorizados")
     data_fim_contrato = models.DateField()
 
     def __str__(self):
-        return f"{self.usuario.username} ({self.empresa_prestadora})"
+        return f"{self.usuario.username} ({self.empresa_prestadora} - {self.get_tipo_contrato_display()})"
 
 
 # REGRAS OPERACIONAIS E DISPOSITIVOS
@@ -65,7 +72,7 @@ class RegraOperacionalMobile(models.Model):
     )
     tolerancia_erro_ia_pct = models.DecimalField(
         max_digits=5, decimal_places=2, default=Decimal('10.0'),
-        help_text="Tolerância de imprecisão da IA YOLO26n (padrão 10%)"
+        help_text="Tolerância de imprecisão da IA (padrão 10%)"
     )
     exige_justificativa = models.BooleanField(default=True)
     horario_inicio = models.TimeField(null=True, blank=True)
@@ -102,12 +109,19 @@ class DispositivoMovel(models.Model):
 class ClasseAtivo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='classes_ativos')
     nome_classe = models.CharField(max_length=100, help_text="Ex: Mesa Bistrô, Gradil")
-    codigo_yolo = models.CharField(max_length=50, blank=True, help_text="Rótulo da classe no modelo YOLO")
+    codigo_yolo = models.CharField(max_length=50, blank=True, help_text="Identificador interno para a IA")
     categoria = models.CharField(max_length=100, blank=True)
+    descricao = models.TextField(blank=True, default='', verbose_name="Descrição do Ativo")
     imagem_referencia = models.ImageField(upload_to='ativos_referencia/', null=True, blank=True)
 
     class Meta:
         unique_together = ('empresa', 'nome_classe')
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_yolo and self.nome_classe:
+            from django.utils.text import slugify
+            self.codigo_yolo = slugify(self.nome_classe).replace('-', '_')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nome_classe} ({self.empresa.razao_social})"
@@ -143,7 +157,7 @@ class ItemInventario(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     inventario = models.ForeignKey(Inventario, on_delete=models.CASCADE, related_name='itens')
     classe_ativo = models.ForeignKey(ClasseAtivo, on_delete=models.PROTECT, related_name='itens_inventariados')
-    qtd_detectada_ia = models.PositiveIntegerField(default=0, help_text="Contagem YOLO")
+    qtd_detectada_ia = models.PositiveIntegerField(default=0, help_text="Contagem detectada pela IA")
     qtd_confirmada_humano = models.PositiveIntegerField(default=0, help_text="Contagem ajustada pelo operador")
     justificativa = models.TextField(blank=True, null=True, help_text="Opcional caso haja divergência")
     foto = models.ImageField(upload_to='contagens_fotos/', null=True, blank=True)
