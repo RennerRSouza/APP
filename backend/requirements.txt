@@ -1,3 +1,17 @@
-fastapi==0.111.0
-uvicorn==0.29.0
-pydantic==2.7.1
+# Framework Principal
+Django>=5.0,<5.2
+
+# API REST para comunicação com o App Mobile
+djangorestframework>=3.15,<3.16
+
+# Conector do Banco de Dados PostgreSQL
+psycopg2-binary>=2.9,<3.0
+
+# Gerenciamento de variáveis de ambiente (.env)
+python-decouple>=3.8,<4.0
+
+# Manipulação de imagens (auditoria de fotos de contagens)
+Pillow>=11.0
+
+# Suporte a CORS (para requisições da web/mobile se necessário)
+django-cors-headers>=4.3,<5.0
