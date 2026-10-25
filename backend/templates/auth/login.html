@@ -41,6 +41,8 @@
 
           {# Preserva o ?next= quando o usuário foi redirecionado por @login_required #}
           <input type="hidden" name="next" value="{{ next }}">
+          <input type="hidden" name="device_uuid" id="id_device_uuid" value="">
+          <input type="hidden" name="device_model" id="id_device_model" value="">
 
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-box-arrow-in-right"></i> Entrar
@@ -56,4 +58,43 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const uuidInput = document.getElementById("id_device_uuid");
+    const modelInput = document.getElementById("id_device_model");
+
+    // Gera ou recupera identificador único do navegador/aparelho no localStorage
+    let deviceUuid = localStorage.getItem("siga_device_uuid");
+    if (!deviceUuid) {
+      const randHex = Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join("").toUpperCase();
+      deviceUuid = "WEB-" + randHex;
+      localStorage.setItem("siga_device_uuid", deviceUuid);
+    }
+    if (uuidInput) {
+      uuidInput.value = deviceUuid;
+    }
+
+    // Identifica modelo amigável do sistema/navegador
+    if (modelInput) {
+      const ua = navigator.userAgent || "";
+      let os = "Dispositivo Web";
+      if (/Android/i.test(ua)) os = "Android";
+      else if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+      else if (/Windows/i.test(ua)) os = "Windows";
+      else if (/Mac/i.test(ua)) os = "macOS";
+      else if (/Linux/i.test(ua)) os = "Linux";
+
+      let browser = "Navegador";
+      if (/Edg\//i.test(ua)) browser = "Edge";
+      else if (/Chrome\//i.test(ua)) browser = "Chrome";
+      else if (/Firefox\//i.test(ua)) browser = "Firefox";
+      else if (/Safari\//i.test(ua)) browser = "Safari";
+
+      modelInput.value = os + " (" + browser + ")";
+    }
+  });
+</script>
 {% endblock %}

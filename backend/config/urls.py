@@ -10,10 +10,12 @@ from django.contrib.auth import views as auth_views
 
 from siga_core.views import (
     # API Mobile (IA)
+    LoginMobileAPIView,
     SincronizacaoAPIView,
     CatalogoAtivosAPIView,
 
     # Auth & Dashboard
+    SigaLoginView,
     CadastroEmpresaView,
     DashboardView,
 
@@ -37,6 +39,13 @@ from siga_core.views import (
     # Dispositivos Móveis (UC05)
     DispositivoListView,
     DispositivoToggleStatusView,
+
+    # Pilares Extras (Vitrine RFQ, Notificações/Digest, Webhook WhatsApp & Audit Trail)
+    PortalVitrinePublicaView,
+    SolicitacaoListView,
+    SolicitacaoTriagemUpdateView,
+    CentralNotificacoesView,
+    WhatsAppWebhookAPIView,
 )
 
 urlpatterns = [
@@ -66,7 +75,7 @@ urlpatterns = [
     path('dispositivos/<uuid:pk>/status/', DispositivoToggleStatusView.as_view(), name='dispositivo_status'),
 
     # 7. Autenticação e Onboarding Web
-    path('login/', auth_views.LoginView.as_view(template_name='auth/login.html'), name='login'),
+    path('login/', SigaLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('cadastro-empresa/', CadastroEmpresaView.as_view(), name='cadastro_empresa'),
 
@@ -77,8 +86,16 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
 
     # 10. Endpoints da API REST para o App Mobile
+    path('api/login/', LoginMobileAPIView.as_view(), name='api_login'),
     path('api/sincronizar/', SincronizacaoAPIView.as_view(), name='api_sincronizar'),
     path('api/catalogo/', CatalogoAtivosAPIView.as_view(), name='api_catalogo'),
+
+    # 11. Pilares Extras: Vitrine Pública RFQ, Triagem, Notificações & Webhook WhatsApp
+    path('portal/<slug:subdominio>/', PortalVitrinePublicaView.as_view(), name='portal_vitrine'),
+    path('solicitacoes/', SolicitacaoListView.as_view(), name='solicitacao_list'),
+    path('solicitacoes/<uuid:pk>/status/', SolicitacaoTriagemUpdateView.as_view(), name='solicitacao_status'),
+    path('notificacoes/', CentralNotificacoesView.as_view(), name='central_notificacoes'),
+    path('api/webhooks/whatsapp/', WhatsAppWebhookAPIView.as_view(), name='webhook_whatsapp'),
 ]
 
 # Servir uploads de fotos de contagem (mídia) em ambiente de desenvolvimento

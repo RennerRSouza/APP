@@ -1,11 +1,12 @@
+from datetime import date, timedelta
 from django import forms
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import (
     Empresa, Usuario, ClasseAtivo, RegraOperacionalMobile,
-    Funcionario, Terceirizado, TipoOperador
+    Funcionario, Terceirizado, TipoOperador,
+    ParametrosLocacao, SolicitacaoInteresse, NotificacaoInterna
 )
-
 
 # ==============================================================================
 # ONBOARDING (EMPRESA + GESTOR)
@@ -66,11 +67,16 @@ class CadastroEmpresaForm(forms.Form):
 class ClasseAtivoForm(forms.ModelForm):
     class Meta:
         model = ClasseAtivo
-        fields = ['nome_classe', 'categoria', 'descricao', 'imagem_referencia']
+        fields = [
+            'nome_classe', 'categoria', 'descricao',
+            'limite_minimo_itens', 'limite_maximo_itens', 'imagem_referencia'
+        ]
         labels = {
             'nome_classe': 'Nome do Ativo',
             'categoria': 'Categoria',
             'descricao': 'Descrição do Ativo (Opcional)',
+            'limite_minimo_itens': 'Qtd. Mínima por Solicitação',
+            'limite_maximo_itens': 'Qtd. Máxima por Solicitação',
             'imagem_referencia': 'Foto de Referência (Opcional)',
         }
         widgets = {
@@ -163,3 +169,94 @@ class UsuarioCreateForm(forms.Form):
         if Usuario.objects.filter(username__iexact=u).exists():
             raise ValidationError("Este nome de usuário já está em uso.")
         return u
+
+# ==============================================================================
+# PILAR 1: VITRINE PARAMETRIZADA & MANIFESTAÇÃO DE INTERESSE (RFQ)
+# ==============================================================================
+class ParametrosLocacaoForm(forms.ModelForm):
+    class Meta:
+        model = ParametrosLocacao
+        fields = ['regiao', 'dias_antecedencia_min', 'prazo_frete_dias_uteis', 'disclaimer_legal']
+        labels = {
+            'regiao': 'Cidade e Região de Atendimento',
+            'dias_antecedencia_min': 'Antecedência Mínima para Reserva (Dias)',
+            'prazo_frete_dias_uteis': 'Prazo Estimado de Logística/Frete (Dias Úteis)',
+            'disclaimer_legal': 'Termo / Disclaimer Legal do Portal Público',
+        }
+        widgets = {
+            'disclaimer_legal': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+
+class SolicitacaoInteresseForm(forms.ModelForm):
+    class Meta:
+        model = SolicitacaoInteresse
+        fields = [
+            'nome_solicitante', 'documento', 'telefone_whatsapp', 'email_solicitante',
+            'cep_evento', 'endereco_evento', 'localizacao',
+            'data_inicio_evento', 'data_fim_evento', 'observacoes_cliente'
+        ]
+        widgets = {
+            'data_inicio_evento': forms.DateInput(attrs={'type': 'date'}),
+            'data_fim_evento': forms.DateInput(attrs={'type': 'date'}),
+            'localizacao': forms.TextInput(attrs={'placeholder': 'link do Google Maps e ponto de referência'}),
+            'observacoes_cliente': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Horário desejado de montagem, restrições de acesso ao local, etc.'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean(self):
+        cleaned = super().clean()
+        dt_inicio = cleaned.get('data_inicio_evento')
+        dt_fim = cleaned.get('data_fim_evento')
+
+        if dt_inicio and dt_fim:
+            if dt_fim < dt_inicio:
+                self.add_error('data_fim_evento', "A data de término não pode ser anterior à data de início.")
+
+            # Regra de Negócio: Validação de antecedência mínima configurada pela locadora
+            dias_min = 3
+            if self.empresa and hasattr(self.empresa, 'parametros_locacao'):
+                dias_min = self.empresa.parametros_locacao.dias_antecedencia_min
+
+            data_minima = date.today() + timedelta(days=dias_min)
+            if dt_inicio < data_minima:
+                self.add_error(
+                    'data_inicio_evento',
+                    f"Esta locadora exige antecedência mínima de {dias_min} dia(s) para análise logística (a partir de {data_minima:%d/%m/%Y})."
+                )
+        return cleaned
+
+
+# ==============================================================================
+# PILAR 2: COMUNICADOS E NOTIFICAÇÕES INTERNAS (NETWORKING)
+# ==============================================================================
+class NotificacaoInternaForm(forms.ModelForm):
+    class Meta:
+        model = NotificacaoInterna
+        fields = ['destinatario', 'tipo', 'titulo', 'mensagem']
+        labels = {
+            'destinatario': 'Destinatário (Vazio = Mural Geral da Equipe)',
+            'tipo': 'Categoria do Aviso',
+            'titulo': 'Título do Comunicado / Tarefa',
+            'mensagem': 'Conteúdo da Mensagem',
+        }
+        widgets = {
+            'mensagem': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            self.fields['destinatario'].queryset = Usuario.objects.filter(empresa=empresa, status_ativo=True)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')

@@ -50,6 +50,19 @@
             {% endif %}
           </div>
 
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="{{ form.limite_minimo_itens.id_for_label }}" class="form-label fw-semibold">Qtd. Mínima por Solicitação</label>
+              {{ form.limite_minimo_itens }}
+              <div class="form-text">Mínimo permitido na Vitrine Pública</div>
+            </div>
+            <div class="col-sm-6">
+              <label for="{{ form.limite_maximo_itens.id_for_label }}" class="form-label fw-semibold">Qtd. Máxima por Solicitação</label>
+              {{ form.limite_maximo_itens }}
+              <div class="form-text">Capacidade máxima por solicitação</div>
+            </div>
+          </div>
+
           <div class="mb-4">
             <label for="{{ form.imagem_referencia.id_for_label }}" class="form-label fw-semibold">Imagem de Referência (Foto do Ativo)</label>
             {{ form.imagem_referencia }}
@@ -71,4 +84,3 @@
   </div>
 </div>
 {% endblock %}
-

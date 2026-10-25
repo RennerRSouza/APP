@@ -6,7 +6,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
   <div>
     <h1 class="h3 fw-bold mb-1">Dispositivos Móveis Homologados</h1>
-    <p class="text-muted mb-0">Controle de autorização e segurança de smartphones que sincronizam inventários (UC05)</p>
+    <p class="text-muted mb-0">Controle de autorização, vínculo por operador e fiscalização de dispositivos inativos</p>
   </div>
 </div>
 
@@ -17,19 +17,51 @@
         <thead class="table-light">
           <tr>
             <th class="ps-3">Modelo do Aparelho</th>
-            <th>UUID do Dispositivo (Header X-Device-UUID)</th>
+            <th>Usuário Responsável</th>
+            <th>UUID do Dispositivo</th>
+            <th>Data de Registro</th>
+            <th>Última Atuação / Fiscalização</th>
             <th>Status de Segurança</th>
             <th class="text-end pe-3">Ação de Controle</th>
           </tr>
         </thead>
         <tbody>
           {% for d in dispositivos %}
-            <tr>
+            <tr class="{% if d.status_autorizacao == 'PENDENTE' %}table-warning{% elif d.inativo %}table-light{% endif %}">
               <td class="ps-3 fw-bold">
                 <i class="bi bi-phone text-primary me-2"></i> {{ d.modelo|default:"Dispositivo Android/iOS" }}
               </td>
               <td>
+                {% if d.usuario_responsavel %}
+                  <div class="fw-semibold">{{ d.usuario_responsavel.get_full_name|default:d.usuario_responsavel.username }}</div>
+                  <small class="text-muted"><code>@{{ d.usuario_responsavel.username }}</code></small>
+                  {% if d.usuario_responsavel.tipo_operador == 'GESTOR' %}
+                    <span class="badge bg-primary ms-1">Gestor</span>
+                  {% elif d.usuario_responsavel.tipo_operador == 'FUNCIONARIO' %}
+                    <span class="badge bg-info text-dark ms-1">Funcionário</span>
+                  {% else %}
+                    <span class="badge bg-secondary ms-1">Terceirizado</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted small">Não vinculado</span>
+                {% endif %}
+              </td>
+              <td>
                 <code>{{ d.uuid_dispositivo }}</code>
+              </td>
+              <td>
+                <div>{{ d.data_registro|date:"d/m/Y H:i" }}</div>
+              </td>
+              <td>
+                <div>{{ d.ultima_atuacao|date:"d/m/Y H:i" }}</div>
+                {% if d.inativo %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-1"
+                        title="Sem atividade há {{ d.dias_sem_atuacao }} dias">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Inativo ({{ d.dias_sem_atuacao }}d sem uso)
+                  </span>
+                {% else %}
+                  <small class="text-muted">Há {{ d.ultima_atuacao|timesince }}</small>
+                {% endif %}
               </td>
               <td>
                 {% if d.status_autorizacao == 'AUTORIZADO' %}
@@ -41,18 +73,29 @@
                     <i class="bi bi-shield-slash"></i> Bloqueado (HTTP 403)
                   </span>
                 {% else %}
-                  <span class="badge bg-warning text-dark">Pendente</span>
+                  <span class="badge bg-warning text-dark">
+                    <i class="bi bi-hourglass-split"></i> Pendente (2º+ Dispositivo)
+                  </span>
                 {% endif %}
               </td>
               <td class="text-end pe-3">
                 <form method="post" action="{% url 'dispositivo_status' d.pk %}" class="d-inline">
                   {% csrf_token %}
                   {% if d.status_autorizacao == 'AUTORIZADO' %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Bloquear sincronizações deste aparelho">
+                    <input type="hidden" name="acao" value="BLOQUEAR">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Bloquear login e sincronizações deste aparelho">
                       <i class="bi bi-slash-circle"></i> Bloquear Aparelho
                     </button>
+                  {% elif d.status_autorizacao == 'PENDENTE' %}
+                    <button type="submit" name="acao" value="AUTORIZAR" class="btn btn-sm btn-success me-1" title="Aprovar homologação deste novo aparelho">
+                      <i class="bi bi-check-circle"></i> Homologar Aparelho
+                    </button>
+                    <button type="submit" name="acao" value="BLOQUEAR" class="btn btn-sm btn-outline-danger" title="Recusar e bloquear este aparelho">
+                      <i class="bi bi-slash-circle"></i> Bloquear
+                    </button>
                   {% else %}
-                    <button type="submit" class="btn btn-sm btn-outline-success" title="Liberar sincronizações deste aparelho">
+                    <input type="hidden" name="acao" value="AUTORIZAR">
+                    <button type="submit" class="btn btn-sm btn-outline-success" title="Liberar login e sincronizações deste aparelho">
                       <i class="bi bi-check-circle"></i> Homologar Aparelho
                     </button>
                   {% endif %}
@@ -61,10 +104,10 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center py-5 text-muted">
+              <td colspan="7" class="text-center py-5 text-muted">
                 <i class="bi bi-phone text-muted" style="font-size: 3rem;"></i>
-                <h5 class="text-muted mt-2">Nenhum dispositivo sincronizado ainda</h5>
-                <p class="text-muted small mb-0">Quando os operadores realizarem a primeira contagem no aplicativo móvel, seus aparelhos serão homologados aqui automaticamente.</p>
+                <h5 class="text-muted mt-2">Nenhum dispositivo registrado ainda</h5>
+                <p class="text-muted small mb-0">O 1º dispositivo de cada operador é homologado automaticamente no login/sincronização; novos dispositivos adicionais do mesmo usuário surgirão aqui como <strong>Pendente</strong>.</p>
               </td>
             </tr>
           {% endfor %}
@@ -74,4 +117,3 @@
   </div>
 </div>
 {% endblock %}
-

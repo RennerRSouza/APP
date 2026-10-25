@@ -130,10 +130,14 @@ class Command(BaseCommand):
             empresa=empresa,
             uuid_dispositivo="SAMSUNG-TAB-001",
             defaults={
+                "usuario_responsavel": user_func,
                 "modelo": "Samsung Galaxy Tab Active 3",
                 "status_autorizacao": DispositivoMovel.StatusAutorizacao.AUTORIZADO,
             }
         )
+        if not disp.usuario_responsavel:
+            disp.usuario_responsavel = user_func
+            disp.save(update_fields=["usuario_responsavel"])
 
         ativo_mesa = ClasseAtivo.objects.filter(empresa=empresa, nome_classe="Mesa Bistrô").first()
         ativo_gradil = ClasseAtivo.objects.filter(empresa=empresa, nome_classe="Gradil").first()

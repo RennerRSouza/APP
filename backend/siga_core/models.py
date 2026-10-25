@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 # MULTI-TENANT (EMPRESA)
@@ -94,11 +95,28 @@ class DispositivoMovel(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='dispositivos')
+    usuario_responsavel = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='dispositivos', verbose_name="Usuário Responsável"
+    )
     uuid_dispositivo = models.CharField(max_length=100, unique=True)
     modelo = models.CharField(max_length=100, blank=True)
     status_autorizacao = models.CharField(
         max_length=20, choices=StatusAutorizacao.choices, default=StatusAutorizacao.AUTORIZADO
     )
+    data_registro = models.DateTimeField(default=timezone.now, verbose_name="Data de Registro")
+    ultima_atuacao = models.DateTimeField(default=timezone.now, verbose_name="Última Atuação")
+
+    @property
+    def dias_sem_atuacao(self):
+        if not self.ultima_atuacao:
+            return 0
+        delta = timezone.now() - self.ultima_atuacao
+        return max(0, delta.days)
+
+    @property
+    def inativo(self):
+        return self.dias_sem_atuacao >= 30
 
     def __str__(self):
         return f"{self.modelo or 'Dispositivo'} ({self.uuid_dispositivo[:8]}...)"
@@ -113,6 +131,8 @@ class ClasseAtivo(models.Model):
     categoria = models.CharField(max_length=100, blank=True)
     descricao = models.TextField(blank=True, default='', verbose_name="Descrição do Ativo")
     imagem_referencia = models.ImageField(upload_to='ativos_referencia/', null=True, blank=True)
+    limite_minimo_itens = models.PositiveIntegerField(default=1, help_text="Quantidade mínima exigida por solicitação")
+    limite_maximo_itens = models.PositiveIntegerField(default=500, help_text="Capacidade máxima por solicitação")
 
     class Meta:
         unique_together = ('empresa', 'nome_classe')
@@ -189,3 +209,145 @@ class LogAuditoria(models.Model):
 
     def __str__(self):
         return f"Parecer por {self.usuario_auditor.username} em {self.data_hora:%d/%m/%Y %H:%M}"
+
+# ==============================================================================
+# PILAR 1: PORTAL DE MANIFESTAÇÃO DE INTERESSE (VITRINE PARAMETRIZADA / RFQ)
+# ==============================================================================
+class ParametrosLocacao(models.Model):
+    empresa = models.OneToOneField(Empresa, on_delete=models.CASCADE, related_name='parametros_locacao')
+    regiao = models.CharField(
+        max_length=200,
+        default="Cidade sede e região metropolitana",
+        verbose_name="Região de Atendimento",
+        help_text="Cidade e região ao redor atendida pela locadora"
+    )
+    dias_antecedencia_min = models.PositiveIntegerField(default=3, help_text="Prazo mínimo de antecedência para reserva (dias)")
+    prazo_frete_dias_uteis = models.PositiveIntegerField(default=2, help_text="Janela estimada de logística de entrega/coleta")
+    disclaimer_legal = models.TextField(
+        default="A manifestação de interesse não configura contrato automático. Toda solicitação passa por crivo logístico prévio de rota, frota e disponibilidade de estoque.",
+        help_text="Aviso legal exibido aos clientes no portal público"
+    )
+
+    def __str__(self):
+        return f"Parâmetros de Locação - {self.empresa.razao_social}"
+
+
+class SolicitacaoInteresse(models.Model):
+    class StatusEsteira(models.TextChoices):
+        RECEBIDO = 'RECEBIDO', 'Recebido (Aguardando Triagem)'
+        EM_TRIAGEM = 'EM_TRIAGEM', 'Em Triagem Logística'
+        VIABILIDADE_APROVADA = 'VIABILIDADE_APROVADA', 'Viabilidade Aprovada'
+        PROPOSTA_ENVIADA = 'PROPOSTA_ENVIADA', 'Proposta Comercial Enviada'
+        CANCELADO_POR_LOGISTICA = 'CANCELADO_POR_LOGISTICA', 'Inviabilizado / Cancelado por Logística'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='solicitacoes_interesse')
+    
+    # Dados do Solicitante
+    nome_solicitante = models.CharField(max_length=200, verbose_name="Nome ou Razão Social")
+    documento = models.CharField(max_length=20, verbose_name="CPF ou CNPJ")
+    telefone_whatsapp = models.CharField(max_length=25, verbose_name="WhatsApp de Contato")
+    email_solicitante = models.EmailField(verbose_name="E-mail")
+    cliente_vip = models.BooleanField(default=False, help_text="Destaca solicitação prioritária e dispara alerta imediato")
+
+    # Local e Datas do Evento
+    cep_evento = models.CharField(max_length=12, verbose_name="CEP do Evento")
+    endereco_evento = models.CharField(max_length=255, verbose_name="Endereço Completo do Evento")
+    localizacao = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="Localização / Link do Mapa",
+        help_text="Link do Google Maps, coordenadas e ponto de referência"
+    )
+    data_inicio_evento = models.DateField(verbose_name="Data de Início do Evento")
+    data_fim_evento = models.DateField(verbose_name="Data de Término do Evento")
+    observacoes_cliente = models.TextField(blank=True, verbose_name="Observações do Evento")
+
+    # Controle da Esteira
+    status = models.CharField(max_length=30, choices=StatusEsteira.choices, default=StatusEsteira.RECEBIDO)
+    parecer_logistica = models.TextField(blank=True, help_text="Justificativa interna da triagem de rota/frota")
+    token_rastreio = models.CharField(max_length=64, blank=True, help_text="Token de pré-identificação via WhatsApp")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"RFQ #{str(self.id)[:8]} - {self.nome_solicitante} ({self.get_status_display()})"
+
+
+class ItemSolicitacaoInteresse(models.Model):
+    solicitacao = models.ForeignKey(SolicitacaoInteresse, on_delete=models.CASCADE, related_name='itens')
+    classe_ativo = models.ForeignKey(ClasseAtivo, on_delete=models.PROTECT)
+    quantidade_solicitada = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.quantidade_solicitada}x {self.classe_ativo.nome_classe}"
+
+
+# ==============================================================================
+# PILAR 2: MOTOR DE NOTIFICAÇÕES E NETWORKING INTERNO
+# ==============================================================================
+class NotificacaoInterna(models.Model):
+    class TipoNotificacao(models.TextChoices):
+        ALERTA_CRITICO = 'ALERTA_CRITICO', 'Alerta Crítico (Diretoria)'
+        DIGEST_EXECUTIVO = 'DIGEST_EXECUTIVO', 'Resumo Executivo Diário (Digest)'
+        TAREFA_OPERACIONAL = 'TAREFA_OPERACIONAL', 'Atribuição / Tarefa de Campo'
+        MURAL_COMUNICADO = 'MURAL_COMUNICADO', 'Comunicado do Mural Geral'
+        VIGENCIA_CONTRATO = 'VIGENCIA_CONTRATO', 'Aviso de Vigência / Acesso'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='notificacoes')
+    destinatario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name='notificacoes_recebidas',
+        null=True, blank=True, help_text="Se vazio, é exibido no mural para toda a equipe da empresa"
+    )
+    tipo = models.CharField(max_length=25, choices=TipoNotificacao.choices, default=TipoNotificacao.MURAL_COMUNICADO)
+    titulo = models.CharField(max_length=150)
+    mensagem = models.TextField()
+    lida = models.BooleanField(default=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        alvo = self.destinatario.username if self.destinatario else "Mural da Equipe"
+        return f"[{self.get_tipo_display()}] {self.titulo} -> {alvo}"
+
+
+# ==============================================================================
+# PILAR 4: ARQUITETURA DE EVENTOS E HISTÓRICO IMUTÁVEL (AUDIT TRAIL)
+# ==============================================================================
+class HistoricoEvento(models.Model):
+    class TipoOrigem(models.TextChoices):
+        PORTAL_EXTERNO = 'PORTAL_EXTERNO', 'Portal Externo (Vitrine RFQ)'
+        WHATSAPP_BOT = 'WHATSAPP_BOT', 'Automação WhatsApp Bot'
+        SISTEMA_WEB = 'SISTEMA_WEB', 'Painel Web Admin'
+        APP_MOBILE = 'APP_MOBILE', 'Aplicativo Mobile IA'
+
+    class CanalComunicacao(models.TextChoices):
+        EMAIL = 'EMAIL', 'E-mail'
+        WHATSAPP = 'WHATSAPP', 'WhatsApp'
+        INTERNO = 'INTERNO', 'Sistema Interno'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='historico_eventos')
+    tipo_origem = models.CharField(max_length=20, choices=TipoOrigem.choices, default=TipoOrigem.SISTEMA_WEB)
+    canal = models.CharField(max_length=15, choices=CanalComunicacao.choices, default=CanalComunicacao.INTERNO)
+    solicitacao_vinculada = models.ForeignKey(
+        SolicitacaoInteresse, on_delete=models.SET_NULL, null=True, blank=True, related_name='eventos_auditoria'
+    )
+    autor = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True, help_text="Usuário humano (vazio se automático/bot)"
+    )
+    acao = models.CharField(max_length=80, help_text="Ex: SOLICITACAO_CRIADA, EMAIL_DIGEST_ENVIADO")
+    payload = models.JSONField(default=dict, blank=True, help_text="Metadados da operação e estado anterior/novo")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"[{self.tipo_origem}] {self.acao} ({self.criado_em:%d/%m/%Y %H:%M})"
