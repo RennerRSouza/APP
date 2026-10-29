@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,testserver', cast=Csv())
 
 
 # Application definition
@@ -151,3 +151,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Custom User Model (conforme DER do SIGA)
 AUTH_USER_MODEL = 'siga_core.Usuario'
+# Autenticação do painel web
+LOGIN_URL = 'login'                  # destino do redirect quando @login_required barra o acesso
+LOGIN_REDIRECT_URL = 'dashboard'       # TEMPORÁRIO: trocar para 'dashboard' na Fase 2
+LOGOUT_REDIRECT_URL = 'login'

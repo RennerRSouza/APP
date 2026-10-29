@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar Empresa | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+  <div class="col-lg-8 col-xl-7">
+
+    <div class="text-center mb-4">
+      <i class="bi bi-building-add text-primary" style="font-size: 2.8rem;"></i>
+      <h1 class="h3 fw-bold mt-2">Cadastre sua Locadora</h1>
+      <p class="text-muted">Crie seu espaço multi-tenant e comece a auditar seus ativos com IA</p>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4 p-md-5">
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Seção 1: Dados da Empresa -->
+          <h5 class="fw-bold text-primary mb-3">
+            <i class="bi bi-buildings"></i> 1. Dados da Locadora
+          </h5>
+
+          <div class="mb-3">
+            <label for="{{ form.razao_social.id_for_label }}" class="form-label fw-semibold">Razão Social</label>
+            {{ form.razao_social }}
+            {% if form.razao_social.errors %}
+              <div class="text-danger small mt-1">{{ form.razao_social.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label for="{{ form.subdominio.id_for_label }}" class="form-label fw-semibold">Identificador Exclusivo (Subdomínio)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted">app.siga.com/</span>
+              {{ form.subdominio }}
+            </div>
+            <div class="form-text">{{ form.subdominio.help_text }}</div>
+            {% if form.subdominio.errors %}
+              <div class="text-danger small mt-1">{{ form.subdominio.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <hr class="my-4 text-muted">
+
+          <!-- Seção 2: Dados do Gestor -->
+          <h5 class="fw-bold text-primary mb-3">
+            <i class="bi bi-person-badge"></i> 2. Conta do Administrador / Gestor
+          </h5>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">Nome</label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}
+                <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">Sobrenome</label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+                <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">E-mail Corporativo</label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">Nome de Usuário</label>
+              {{ form.username }}
+              {% if form.username.errors %}
+                <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">Senha</label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}
+                <div class="text-danger small mt-1">{{ form.password1.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">Confirmar Senha</label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}
+                <div class="text-danger small mt-1">{{ form.password2.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
+            <i class="bi bi-check-circle"></i> Criar Locadora e Acessar
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+    <p class="text-center mt-3 text-muted">
+      Sua locadora já possui cadastro? 
+      <a href="{% url 'login' %}" class="fw-semibold text-decoration-none">Acessar minha conta</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

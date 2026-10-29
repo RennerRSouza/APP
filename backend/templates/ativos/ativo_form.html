@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Editar Ativo{% else %}Novo Ativo{% endif %} | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="d-flex align-items-center mb-4">
+      <a href="{% url 'ativo_list' %}" class="btn btn-outline-secondary btn-sm me-3">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <h1 class="h3 fw-bold mb-0">
+        {% if form.instance.pk %}Editar Ativo: {{ form.instance.nome_classe }}{% else %}Cadastrar Novo Ativo{% endif %}
+      </h1>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="{{ form.nome_classe.id_for_label }}" class="form-label fw-semibold">Nome do Ativo</label>
+            {{ form.nome_classe }}
+            {% if form.nome_classe.errors %}
+              <div class="text-danger small mt-1">{{ form.nome_classe.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição do Ativo (Opcional)</label>
+            {{ form.descricao }}
+            {% if form.descricao.errors %}
+              <div class="text-danger small mt-1">{{ form.descricao.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label>
+            {{ form.categoria }}
+            {% if form.categoria.errors %}
+              <div class="text-danger small mt-1">{{ form.categoria.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="{{ form.limite_minimo_itens.id_for_label }}" class="form-label fw-semibold">Qtd. Mínima por Solicitação</label>
+              {{ form.limite_minimo_itens }}
+              <div class="form-text">Mínimo permitido na Vitrine Pública</div>
+            </div>
+            <div class="col-sm-6">
+              <label for="{{ form.limite_maximo_itens.id_for_label }}" class="form-label fw-semibold">Qtd. Máxima por Solicitação</label>
+              {{ form.limite_maximo_itens }}
+              <div class="form-text">Capacidade máxima por solicitação</div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="{{ form.imagem_referencia.id_for_label }}" class="form-label fw-semibold">Imagem de Referência (Foto do Ativo)</label>
+            {{ form.imagem_referencia }}
+            {% if form.imagem_referencia.errors %}
+              <div class="text-danger small mt-1">{{ form.imagem_referencia.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'ativo_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4 fw-bold">
+              <i class="bi bi-check-circle"></i> Salvar Ativo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria #{{ inventario.id|stringformat:".8s" }} | SIGA Web Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    /* Oculta navbar, botões e formulário de submissão na impressão */
+    nav, .navbar, .btn, .no-print, form, .badge {
+      display: none !important;
+    }
+    body {
+      background-color: #ffffff !important;
+      font-size: 11pt;
+      color: #000000;
+    }
+    .container {
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+    .card {
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+      margin-bottom: 16px !important;
+      page-break-inside: avoid;
+    }
+    .table {
+      width: 100% !important;
+    }
+    .print-header {
+      display: block !important;
+      border-bottom: 2px solid #333;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+  }
+  @media screen {
+    .print-header {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho Exclusivo para Impressão/PDF -->
+<div class="print-header">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="fw-bold mb-0">LAUDO DE AUDITORIA E CONFERÊNCIA DE ATIVOS</h3>
+      <p class="mb-0 text-muted">SIGA - Sistema Integrado de Gestão de Ativos com IA</p>
+    </div>
+    <div class="text-end">
+      <strong>{{ inventario.empresa.razao_social }}</strong><br>
+      <small>Lote: #{{ inventario.id|stringformat:".12s" }} | Status: {{ inventario.get_status_auditoria_display }}</small>
+    </div>
+  </div>
+</div>
+
+<!-- Barra Superior com Navegação e Status (Visível na tela) -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom no-print">
+  <div>
+    <a href="{% url 'inventario_list' %}" class="btn btn-outline-secondary btn-sm mb-2">
+      <i class="bi bi-arrow-left"></i> Voltar à Listagem
+    </a>
+    <h1 class="h3 fw-bold mb-0">
+      Auditoria do Lote <code>#{{ inventario.id }}</code>
+    </h1>
+  </div>
+  <div class="mt-2 mt-md-0 d-flex align-items-center">
+    <button onclick="window.print()" class="btn btn-outline-dark btn-sm me-3 shadow-sm">
+      <i class="bi bi-printer"></i> Imprimir Laudo / Salvar PDF
+    </button>
+    <span class="fs-6 me-2 text-muted">Status atual:</span>
+    {% if inventario.status_auditoria == 'DIVERGENTE' %}
+      <span class="badge bg-danger fs-6 p-2">
+        <i class="bi bi-exclamation-triangle"></i> Divergente (> 10%)
+      </span>
+    {% elif inventario.status_auditoria == 'APROVADO' %}
+      <span class="badge bg-success fs-6 p-2">
+        <i class="bi bi-check-circle"></i> Aprovado
+      </span>
+    {% elif inventario.status_auditoria == 'REJEITADO' %}
+      <span class="badge bg-dark fs-6 p-2">Rejeitado</span>
+    {% else %}
+      <span class="badge bg-warning text-dark fs-6 p-2">Em Análise</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Coluna Esquerda: Dados, Confronto Numérico e Foto (8 colunas) -->
+  <div class="col-lg-8">
+
+    <!-- Card 1: Metadados da Operação -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle"></i> Dados da Coleta Mobile</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6 col-md-3">
+            <span class="text-muted small d-block">Operador</span>
+            <strong>{{ inventario.usuario.get_full_name|default:inventario.usuario.username }}</strong>
+            <span class="badge bg-light text-dark border d-block mt-1">{{ inventario.usuario.get_tipo_operador_display }}</span>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <span class="text-muted small d-block">Dispositivo</span>
+            <strong>{{ inventario.dispositivo.modelo|default:"Smartphone" }}</strong>
+            <span class="text-muted small d-block text-truncate">UUID: {{ inventario.dispositivo.uuid_dispositivo|default:"N/A"|stringformat:".10s" }}...</span>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <span class="text-muted small d-block">Data / Hora Fim</span>
+            <strong>{{ inventario.data_hora_fim|date:"d/m/Y H:i:s" }}</strong>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <span class="text-muted small d-block">Regra Operacional</span>
+            <strong>Tol. IA: {{ inventario.regra_operacional.tolerancia_erro_ia_pct|default:"10.0" }}%</strong>
+            <span class="text-muted small d-block">Limite Edição: {{ inventario.regra_operacional.limite_edicao_manual_pct|default:"20.0" }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Confronto IA vs Humano -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-table"></i> Confronto Numérico: IA vs. Operador</h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Ativo / Classe</th>
+              <th class="text-center">Detectado pela IA</th>
+              <th class="text-center">Confirmado Humano</th>
+              <th class="text-center">Divergência</th>
+              <th>Justificativa do Operador</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens %}
+              <tr {% if item.divergencia_percentual > 10.0 %}class="table-danger bg-opacity-25"{% endif %}>
+                <td class="ps-3 fw-bold">
+                  {{ item.classe_ativo.nome_classe }}
+                  {% if item.classe_ativo.categoria %}
+                    <span class="badge bg-light text-dark border ms-1 small">{{ item.classe_ativo.categoria }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-center fs-5 fw-bold text-secondary">
+                  {{ item.qtd_detectada_ia }}
+                </td>
+                <td class="text-center fs-5 fw-bold text-primary">
+                  {{ item.qtd_confirmada_humano }}
+                </td>
+                <td class="text-center">
+                  {% if item.divergencia_percentual > 10.0 %}
+                    <span class="badge bg-danger fs-6">
+                      <i class="bi bi-arrow-up-right"></i> {{ item.divergencia_percentual|floatformat:1 }}%
+                    </span>
+                  {% else %}
+                    <span class="badge bg-success fs-6">
+                      {{ item.divergencia_percentual|floatformat:1 }}%
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.justificativa %}
+                    <div class="p-2 bg-light rounded border small">
+                      <i class="bi bi-chat-left-quote text-primary"></i> "{{ item.justificativa }}"
+                    </div>
+                  {% else %}
+                    <span class="text-muted fst-italic small">Nenhuma justificativa informada</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">Nenhum item registrado neste lote.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 3: Inspeção Visual da Foto -->
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-camera"></i> Inspeção Visual da Foto</h5>
+      </div>
+      <div class="card-body text-center p-4">
+        {% with primeiro_item=itens.0 %}
+          {% if primeiro_item and primeiro_item.foto %}
+            <img src="{{ primeiro_item.foto.url }}" alt="Foto da contagem" class="img-fluid rounded border shadow-sm" style="max-height: 480px;">
+          {% else %}
+            <div class="py-5 bg-light rounded border border-dashed">
+              <i class="bi bi-image text-muted" style="font-size: 3.5rem;"></i>
+              <p class="text-muted mt-2 mb-0">Foto em trânsito de sincronização ou modo de contagem rápida sem foto.</p>
+            </div>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Coluna Direita: Parecer de Auditoria e Histórico (4 colunas) -->
+  <div class="col-lg-4">
+
+    <!-- Card: Emissão de Parecer (Oculto na impressão) -->
+    <div class="card shadow-sm border-0 mb-4 border-top border-primary border-4 no-print">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square text-primary"></i> Emissão de Parecer</h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="parecer" class="form-label fw-semibold">Parecer do Auditor (Obrigatório):</label>
+            <textarea name="parecer" id="parecer" rows="4" class="form-control" 
+                      placeholder="Descreva o motivo da aprovação ou rejeição (ex: recontagem física conferida no almoxarifado)..." required></textarea>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" name="acao" value="APROVAR" class="btn btn-success fw-bold py-2 shadow-sm">
+              <i class="bi bi-check-circle"></i> Aprovar Inventário
+            </button>
+            <button type="submit" name="acao" value="REJEITAR" class="btn btn-danger fw-bold py-2 shadow-sm">
+              <i class="bi bi-x-circle"></i> Rejeitar com Ressalvas
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Card: Histórico de Logs (Append-Only) -->
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-secondary"></i> Histórico de Pareceres</h5>
+      </div>
+      <div class="card-body p-3">
+        {% if logs %}
+          <ul class="list-group list-group-flush">
+            {% for log in logs %}
+              <li class="list-group-item px-0 py-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <strong class="text-primary"><i class="bi bi-person-check"></i> {{ log.usuario_auditor.get_full_name|default:log.usuario_auditor.username }}</strong>
+                  <small class="text-muted">{{ log.data_hora|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p class="mb-0 text-secondary small bg-light p-2 rounded">
+                  "{{ log.parecer }}"
+                </p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-chat-square-text fs-3 d-block mb-1"></i>
+            Nenhum parecer emitido ainda para este lote.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

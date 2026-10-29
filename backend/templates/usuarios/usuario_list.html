@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Equipe e Usuários | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Gestão de Equipe e Usuários</h1>
+    <p class="text-muted mb-0">Controle de operadores do aplicativo móvel</p>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'usuario_novo' %}" class="btn btn-primary shadow-sm">
+      <i class="bi bi-person-plus"></i> Novo Usuário
+    </a>
+  </div>
+</div>
+
+<!-- Filtros Rápidos por Perfil e Campo de Busca -->
+<div class="row g-2 mb-3 align-items-center">
+  <div class="col-md-6 col-lg-7">
+    <div class="btn-group btn-group-sm" role="group" id="filtrosPerfil">
+      <button type="button" class="btn btn-outline-primary active" data-filtro="TODOS">
+        Todos <span class="badge bg-secondary ms-1">{{ usuarios|length }}</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary" data-filtro="FUNCIONARIO">
+        <i class="bi bi-person-check"></i> Funcionários
+      </button>
+      <button type="button" class="btn btn-outline-primary" data-filtro="TERCEIRIZADO">
+        <i class="bi bi-person"></i> Terceirizados
+      </button>
+      <button type="button" class="btn btn-outline-primary" data-filtro="GESTOR">
+        <i class="bi bi-person-workspace"></i> Gestores
+      </button>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-5">
+    <div class="input-group input-group-sm shadow-sm">
+      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="text" id="campoBuscaUsuario" class="form-control border-start-0" 
+             placeholder="Buscar por nome, usuário ou prestadora..." autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="tabelaUsuarios">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">Usuário</th>
+            <th>Nome Completo</th>
+            <th>E-mail</th>
+            <th>Perfil / Tipo</th>
+            <th>Dados Operacionais</th>
+            <th>Status</th>
+            <th class="text-end pe-3">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+            <tr class="linha-usuario" 
+                data-tipo="{{ u.tipo_operador }}" 
+                data-busca="{{ u.username|lower }} {{ u.get_full_name|lower }} {{ u.email|lower }} {{ u.perfil_terceirizado.empresa_prestadora|lower }} {{ u.perfil_funcionario.matricula|lower }}">
+              <td class="ps-3 fw-bold">
+                <code>{{ u.username }}</code>
+                {% if u == user %}
+                  <span class="badge bg-secondary ms-1">Você</span>
+                {% endif %}
+              </td>
+              <td>{{ u.get_full_name|default:"-" }}</td>
+              <td>{{ u.email|default:"-" }}</td>
+              <td>
+                {% if u.tipo_operador == 'GESTOR' %}
+                  <span class="badge bg-primary">Gestor</span>
+                {% elif u.tipo_operador == 'FUNCIONARIO' %}
+                  <span class="badge bg-success">Funcionário</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Terceirizado</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.tipo_operador == 'FUNCIONARIO' and u.perfil_funcionario %}
+                  <small class="d-block text-muted">Matrícula: <strong>{{ u.perfil_funcionario.matricula }}</strong></small>
+                  <small class="d-block text-muted">Depto: {{ u.perfil_funcionario.departamento|default:"-" }}</small>
+                {% elif u.tipo_operador == 'TERCEIRIZADO' and u.perfil_terceirizado %}
+                  <small class="d-block text-muted">Prestadora: <strong>{{ u.perfil_terceirizado.empresa_prestadora }}</strong></small>
+                  <small class="d-block text-muted">Contrato: <span class="badge bg-light text-dark border">{{ u.perfil_terceirizado.get_tipo_contrato_display }}</span></small>
+                  <small class="d-block text-muted">Vigência: Até {{ u.perfil_terceirizado.data_fim_contrato|date:"d/m/Y" }} ({{ u.perfil_terceirizado.dias_acesso_ano }} dias/ano)</small>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.status_ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-danger">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                {% if u != user %}
+                  <form method="post" action="{% url 'usuario_status' u.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    {% if u.status_ativo %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Desativar usuário">
+                        <i class="bi bi-person-x"></i> Desativar
+                      </button>
+                    {% else %}
+                      <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar usuário">
+                        <i class="bi bi-person-check"></i> Ativar
+                      </button>
+                    {% endif %}
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">Nenhum usuário cadastrado.</td>
+            </tr>
+          {% endfor %}
+          <!-- Mensagem se filtro/busca não encontrar nada -->
+          <tr id="semUsuariosFiltro" class="d-none">
+            <td colspan="7" class="text-center py-4 text-muted">
+              <i class="bi bi-search fs-3 d-block mb-1 text-secondary opacity-50"></i>
+              Nenhum usuário encontrado com os filtros aplicados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const botoesFiltro = document.querySelectorAll("#filtrosPerfil button");
+    const campoBusca = document.getElementById("campoBuscaUsuario");
+    const linhas = document.querySelectorAll(".linha-usuario");
+    const semResultados = document.getElementById("semUsuariosFiltro");
+    let filtroAtivo = "TODOS";
+
+    function aplicarFiltros() {
+      const termo = campoBusca ? campoBusca.value.trim().toLowerCase() : "";
+      let visiveis = 0;
+
+      linhas.forEach(function (linha) {
+        const tipo = linha.getAttribute("data-tipo") || "";
+        const textoBusca = linha.getAttribute("data-busca") || "";
+
+        const bateTipo = (filtroAtivo === "TODOS" || tipo === filtroAtivo);
+        const bateBusca = (termo === "" || textoBusca.includes(termo));
+
+        if (bateTipo && bateBusca) {
+          linha.style.display = "";
+          visiveis++;
+        } else {
+          linha.style.display = "none";
+        }
+      });
+
+      if (semResultados) {
+        if (visiveis === 0 && linhas.length > 0) {
+          semResultados.classList.remove("d-none");
+        } else {
+          semResultados.classList.add("d-none");
+        }
+      }
+    }
+
+    botoesFiltro.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        botoesFiltro.forEach(b => b.classList.remove("active"));
+        this.classList.add("active");
+        filtroAtivo = this.getAttribute("data-filtro");
+        aplicarFiltros();
+      });
+    });
+
+    if (campoBusca) {
+      campoBusca.addEventListener("input", aplicarFiltros);
+    }
+  });
+</script>
+{% endblock %}
+

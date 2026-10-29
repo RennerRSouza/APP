@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Notificações, Digest & Trilha de Auditoria | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Motor de Notificações, WhatsApp Bot & Audit Trail</h1>
+    <p class="text-muted mb-0">
+      Filtro Anti-Ruído da Diretoria, Mural da Equipe e Trilha Imutável de Eventos (Append-Only)
+    </p>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <form method="post" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="GERAR_DIGEST">
+      <button type="submit" class="btn btn-dark btn-sm fw-bold shadow-sm">
+        <i class="bi bi-envelope-paper-heart"></i> Disparar Digest Executivo Matinal (08:00)
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Coluna Esquerda: Mural e Publicação de Comunicados -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-primary">
+          <i class="bi bi-megaphone"></i> Central de Avisos & Mural da Equipe
+        </h5>
+        <span class="badge bg-primary">{{ notificacoes|length }} recente(s)</span>
+      </div>
+      <div class="card-body p-0">
+        {% if notificacoes %}
+          <ul class="list-group list-group-flush">
+            {% for n in notificacoes %}
+              <li class="list-group-item p-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div>
+                    {% if n.tipo == 'ALERTA_CRITICO' %}
+                      <span class="badge bg-danger me-1">Alerta Crítico</span>
+                    {% elif n.tipo == 'DIGEST_EXECUTIVO' %}
+                      <span class="badge bg-dark me-1">Digest Executivo</span>
+                    {% elif n.tipo == 'TAREFA_OPERACIONAL' %}
+                      <span class="badge bg-primary me-1">Tarefa de Campo</span>
+                    {% else %}
+                      <span class="badge bg-info text-dark me-1">{{ n.get_tipo_display }}</span>
+                    {% endif %}
+                    <strong>{{ n.titulo }}</strong>
+                  </div>
+                  <small class="text-muted">{{ n.criado_em|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p class="mb-1 small text-secondary">{{ n.mensagem }}</p>
+                <small class="text-muted">
+                  <i class="bi bi-person-badge"></i> Destino:
+                  <strong>{% if n.destinatario %}{{ n.destinatario.get_full_name|default:n.destinatario.username }}{% else %}Mural Geral (Toda a Equipe){% endif %}</strong>
+                </small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-center py-4 text-muted small">
+            Nenhuma notificação ou comunicado registrado ainda.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna Direita: Publicar Aviso + Simulador do Bot WhatsApp -->
+  <div class="col-lg-5">
+    <!-- Card 1: Publicar no Mural / Enviar Tarefa -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-send text-primary"></i> Novo Comunicado / Tarefa</h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">{{ form.destinatario.label }}</label>
+            {{ form.destinatario }}
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">{{ form.tipo.label }}</label>
+            {{ form.tipo }}
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">{{ form.titulo.label }}</label>
+            {{ form.titulo }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">{{ form.mensagem.label }}</label>
+            {{ form.mensagem }}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">
+            <i class="bi bi-check2-circle"></i> Publicar Aviso
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Card 2: Simulador Interativo do Bot WhatsApp (Pilar 3) -->
+    <div class="card border-0 shadow-sm border-top border-success border-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0 text-success">
+          <i class="bi bi-whatsapp"></i> Testar Webhook Bot WhatsApp
+        </h5>
+        <small class="text-muted">Endpoint: <code>POST /api/webhooks/whatsapp/</code></small>
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 mb-3">
+          <button type="button" class="btn btn-outline-success btn-sm flex-fill btn-simular-wpp" data-opcao="1">
+            Opção 1 (Região/Regras)
+          </button>
+          <button type="button" class="btn btn-outline-success btn-sm flex-fill btn-simular-wpp" data-opcao="2">
+            Opção 2 (Catálogo)
+          </button>
+          <button type="button" class="btn btn-outline-success btn-sm flex-fill btn-simular-wpp" data-opcao="3">
+            Opção 3 (Link RFQ)
+          </button>
+        </div>
+        <div id="respostaBotBox" class="p-3 bg-light rounded border small text-secondary">
+          Clique em uma opção acima para simular uma mensagem de cliente chegando via Meta Cloud API.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pilar 4: Trilha de Auditoria Imutável (HistoricoEvento) -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h5 class="fw-bold mb-0 text-dark">
+      <i class="bi bi-journal-code text-primary"></i> Trilha de Auditoria Imutável (Append-Only Audit Trail)
+    </h5>
+    <span class="badge bg-secondary">Últimos {{ eventos|length }} eventos</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Data / Hora</th>
+          <th>Origem</th>
+          <th>Canal</th>
+          <th>Ação Executada</th>
+          <th>Autor</th>
+          <th>Payload (JSON)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in eventos %}
+          <tr>
+            <td class="ps-3 text-nowrap">{{ ev.criado_em|date:"d/m/Y H:i:s" }}</td>
+            <td><span class="badge bg-light text-dark border">{{ ev.get_tipo_origem_display }}</span></td>
+            <td><span class="badge bg-secondary">{{ ev.get_canal_display }}</span></td>
+            <td class="fw-bold text-primary"><code>{{ ev.acao }}</code></td>
+            <td>{{ ev.autor.username|default:"Sistema / Bot" }}</td>
+            <td><code class="text-muted">{{ ev.payload }}</code></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-muted">Nenhum evento registrado na trilha de auditoria ainda.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const botoes = document.querySelectorAll(".btn-simular-wpp");
+    const box = document.getElementById("respostaBotBox");
+
+    botoes.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const opcao = this.getAttribute("data-opcao");
+        box.innerHTML = "<em>Processando mensagem no Webhook WhatsApp...</em>";
+
+        fetch("{% url 'webhook_whatsapp' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({
+            subdominio: "{{ user.empresa.subdominio|default:'' }}",
+            from: "+5511988887777",
+            nome: "Cliente Demonstração",
+            text: opcao
+          })
+        })
+          .then(r => r.json())
+          .then(data => {
+            box.innerHTML = `<strong>Resposta Automática do Bot (Opção ${data.opcao_processada}):</strong><br>${data.resposta_bot}`;
+          })
+          .catch(() => {
+            box.innerHTML = "<span class='text-danger'>Erro ao consultar o webhook.</span>";
+          });
+      });
+    });
+  });
+</script>
+{% endblock %}
+

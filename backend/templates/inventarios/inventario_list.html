@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Inventários | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Auditoria de Inventários</h1>
+    <p class="text-muted mb-0">Histórico de lotes transmitidos pelo aplicativo móvel com contagens da IA</p>
+  </div>
+  <div>
+    {% if total_divergentes > 0 %}
+      <span class="badge bg-danger p-2 fs-6 shadow-sm">
+        <i class="bi bi-exclamation-triangle"></i> {{ total_divergentes }} divergência(s) pendente(s)
+      </span>
+    {% else %}
+      <span class="badge bg-success p-2 fs-6 shadow-sm">
+        <i class="bi bi-check-circle"></i> 0 divergências pendentes
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filtros de Status (Pills) e Busca Rápida -->
+<div class="row g-2 mb-4 align-items-center">
+  <div class="col-lg-8">
+    <ul class="nav nav-pills bg-white p-2 rounded shadow-sm border mb-0">
+      <li class="nav-item">
+        <a class="nav-link py-1 px-3 {% if status_atual == 'TODOS' %}active{% endif %}" href="{% url 'inventario_list' %}">
+          Todos os Lotes
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 px-3 {% if status_atual == 'DIVERGENTE' %}active bg-danger{% endif %}" href="{% url 'inventario_list' %}?status=DIVERGENTE">
+          <i class="bi bi-exclamation-triangle"></i> Divergentes (> 10%)
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 px-3 {% if status_atual == 'EM_ANALISE' %}active{% endif %}" href="{% url 'inventario_list' %}?status=EM_ANALISE">
+          Em Análise
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 px-3 {% if status_atual == 'APROVADO' %}active bg-success{% endif %}" href="{% url 'inventario_list' %}?status=APROVADO">
+          <i class="bi bi-check-circle"></i> Aprovados
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 px-3 {% if status_atual == 'REJEITADO' %}active bg-dark{% endif %}" href="{% url 'inventario_list' %}?status=REJEITADO">
+          Rejeitados
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="col-lg-4">
+    <div class="input-group shadow-sm">
+      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="text" id="campoBuscaInventario" class="form-control border-start-0" 
+             placeholder="Filtrar operador, ID ou aparelho..." autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de Inventários -->
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    {% if inventarios %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tabelaInventarios">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">ID Lote</th>
+              <th>Data / Horário</th>
+              <th>Operador</th>
+              <th>Dispositivo</th>
+              <th>Resumo dos Itens</th>
+              <th>Status Auditoria</th>
+              <th class="text-end pe-3">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inv in inventarios %}
+              <tr class="linha-inventario" 
+                  data-busca="{{ inv.id|lower }} {{ inv.usuario.username|lower }} {{ inv.usuario.get_full_name|lower }} {{ inv.dispositivo.modelo|lower }} {% for item in inv.itens.all %}{{ item.classe_ativo.nome_classe|lower }} {% endfor %}">
+                <td class="ps-3 fw-bold">
+                  <code>#{{ inv.id|stringformat:".8s" }}</code>
+                </td>
+                <td>{{ inv.data_hora_fim|date:"d/m/Y H:i" }}</td>
+                <td>
+                  <i class="bi bi-person text-muted"></i> {{ inv.usuario.get_full_name|default:inv.usuario.username }}
+                  <span class="badge bg-light text-dark border ms-1 small">{{ inv.usuario.get_tipo_operador_display }}</span>
+                </td>
+                <td>
+                  <span class="text-muted small">{{ inv.dispositivo.modelo|default:"Mobile" }}</span>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for item in inv.itens.all %}
+                      <span class="badge {% if item.divergencia_percentual > 10.0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ item.classe_ativo.nome_classe }}: {{ item.qtd_confirmada_humano }}
+                      </span>
+                    {% empty %}
+                      <span class="text-muted small">Sem itens</span>
+                    {% endfor %}
+                  </div>
+                </td>
+                <td>
+                  {% if inv.status_auditoria == 'DIVERGENTE' %}
+                    <span class="badge bg-danger">
+                      <i class="bi bi-exclamation-triangle"></i> Divergente
+                    </span>
+                  {% elif inv.status_auditoria == 'APROVADO' %}
+                    <span class="badge bg-success">
+                      <i class="bi bi-check-circle"></i> Aprovado
+                    </span>
+                  {% elif inv.status_auditoria == 'REJEITADO' %}
+                    <span class="badge bg-dark">Rejeitado</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Em Análise</span>
+                  {% endif %}
+                </td>
+                <td class="text-end pe-3">
+                  <a href="{% url 'inventario_auditar' inv.id %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-search"></i> Inspecionar
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+            <tr id="semInventariosBusca" class="d-none">
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="bi bi-search fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                Nenhum lote corresponde aos termos da busca digitada.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      {% if is_paginated %}
+        <nav class="p-3 border-top d-flex justify-content-center">
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_atual != 'TODOS' %}&status={{ status_atual }}{% endif %}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item disabled">
+              <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_atual != 'TODOS' %}&status={{ status_atual }}{% endif %}">Próxima</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-funnel text-muted" style="font-size: 3rem;"></i>
+        <h5 class="text-muted mt-2">Nenhum lote encontrado para este filtro</h5>
+        <p class="text-muted small mb-0">Selecione outro status ou aguarde novos inventários enviados pelo app mobile.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const inputBusca = document.getElementById("campoBuscaInventario");
+    const linhas = document.querySelectorAll(".linha-inventario");
+    const semResultados = document.getElementById("semInventariosBusca");
+
+    if (inputBusca) {
+      inputBusca.addEventListener("input", function () {
+        const termo = this.value.trim().toLowerCase();
+        let visiveis = 0;
+
+        linhas.forEach(function (linha) {
+          const busca = linha.getAttribute("data-busca") || "";
+          if (termo === "" || busca.includes(termo)) {
+            linha.style.display = "";
+            visiveis++;
+          } else {
+            linha.style.display = "none";
+          }
+        });
+
+        if (semResultados) {
+          if (visiveis === 0 && linhas.length > 0) {
+            semResultados.classList.remove("d-none");
+          } else {
+            semResultados.classList.add("d-none");
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

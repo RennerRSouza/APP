@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo de Ativos | SIGA Web Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h1 class="h3 fw-bold mb-1">Catálogo de Ativos</h1>
+    <p class="text-muted mb-0">Classes cadastradas para reconhecimento pela IA no aplicativo móvel</p>
+  </div>
+  <div class="mt-2 mt-md-0">
+    <a href="{% url 'ativo_novo' %}" class="btn btn-primary shadow-sm">
+      <i class="bi bi-plus-circle"></i> Novo Ativo
+    </a>
+  </div>
+</div>
+
+{% if ativos %}
+  <!-- Barra de Busca Instantânea -->
+  <div class="row mb-4">
+    <div class="col-md-6 col-lg-5">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white border-end-0 text-muted">
+          <i class="bi bi-search"></i>
+        </span>
+        <input type="text" id="campoBuscaAtivo" class="form-control border-start-0" 
+               placeholder="Filtrar por nome ou categoria..." autocomplete="off">
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-7 d-flex align-items-center justify-content-md-end mt-2 mt-md-0">
+      <span class="text-muted small" id="contadorAtivos">
+        Exibindo <strong>{{ ativos|length }}</strong> ativo{{ ativos|length|pluralize }}
+      </span>
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-4" id="gridAtivos">
+  {% for ativo in ativos %}
+    <div class="col-sm-6 col-md-4 col-xl-3 item-ativo" 
+         data-nome="{{ ativo.nome_classe|lower }}" 
+         data-categoria="{{ ativo.categoria|lower }}">
+      <div class="card h-100 shadow-sm border-0">
+        {% if ativo.imagem_referencia %}
+          <img src="{{ ativo.imagem_referencia.url }}" class="card-img-top" alt="{{ ativo.nome_classe }}" style="height: 180px; object-fit: cover;">
+        {% else %}
+          <div class="bg-light text-center py-5 rounded-top border-bottom">
+            <i class="bi bi-box-seam text-secondary" style="font-size: 3rem;"></i>
+          </div>
+        {% endif %}
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="fw-bold mb-0 text-dark">{{ ativo.nome_classe }}</h5>
+            <span class="badge bg-primary">{{ ativo.categoria|default:"Geral" }}</span>
+          </div>
+          {% if ativo.descricao %}
+            <p class="text-secondary small mb-3">
+              {{ ativo.descricao|truncatewords:15 }}
+            </p>
+          {% else %}
+            <p class="text-muted small fst-italic mb-3">Sem descrição cadastrada</p>
+          {% endif %}
+          <div class="mt-auto">
+            <a href="{% url 'ativo_editar' ativo.pk %}" class="btn btn-outline-secondary btn-sm w-100">
+              <i class="bi bi-pencil"></i> Editar Ativo
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="text-center py-5 bg-white rounded shadow-sm border">
+        <i class="bi bi-box text-muted" style="font-size: 3rem;"></i>
+        <h5 class="text-muted mt-2">Nenhum ativo cadastrado no catálogo</h5>
+        <p class="text-muted small mb-3">Cadastre itens como Mesa Bistrô e Gradil para orientar a IA do app móvel.</p>
+        <a href="{% url 'ativo_novo' %}" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Ativo
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- Mensagem quando a busca não encontrar resultados -->
+  <div class="col-12 d-none" id="semResultadosBusca">
+    <div class="text-center py-5 bg-white rounded shadow-sm border">
+      <i class="bi bi-search text-muted" style="font-size: 2.5rem;"></i>
+      <h5 class="text-muted mt-2">Nenhum ativo encontrado</h5>
+      <p class="text-muted small mb-0">Tente buscar por outro termo ou categoria.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const inputBusca = document.getElementById("campoBuscaAtivo");
+    const itens = document.querySelectorAll(".item-ativo");
+    const semResultados = document.getElementById("semResultadosBusca");
+    const contador = document.getElementById("contadorAtivos");
+    const totalInicial = itens.length;
+
+    if (inputBusca) {
+      inputBusca.addEventListener("input", function () {
+        const termo = this.value.trim().toLowerCase();
+        let visiveis = 0;
+
+        itens.forEach(function (card) {
+          const nome = card.getAttribute("data-nome") || "";
+          const cat = card.getAttribute("data-categoria") || "";
+
+          if (nome.includes(termo) || cat.includes(termo)) {
+            card.style.display = "";
+            visiveis++;
+          } else {
+            card.style.display = "none";
+          }
+        });
+
+        if (contador) {
+          contador.innerHTML = `Exibindo <strong>${visiveis}</strong> de <strong>${totalInicial}</strong> ativos`;
+        }
+
+        if (semResultados) {
+          if (visiveis === 0 && totalInicial > 0) {
+            semResultados.classList.remove("d-none");
+          } else {
+            semResultados.classList.add("d-none");
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
+
