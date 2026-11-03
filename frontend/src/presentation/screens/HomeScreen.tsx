@@ -1,78 +1,29 @@
-import React, { useState } from 'react';
-import { 
-  SafeAreaView, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView,
-  StatusBar,
-  Image,
-  Alert
-} from 'react-native';
-import { CameraScanner } from '../components/CameraScanner';
-import { GalleryService } from '../../core/media/GalleryService';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React from 'react';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { pickImage } from '../../core/gallery/pickImage';
+import { RootStackParamList } from '../navigation/types';
 
-export function HomeScreen() {
-  const [showCamera, setShowCamera] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+export function HomeScreen({ navigation }: Props) {
 
   const handleOpenGallery = async () => {
-    const result = await GalleryService.openGallery();
-    if (result && result.assets && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      if (uri) setPreviewImage(uri);
+    try {
+      const uri = await pickImage();
+      if (uri) {
+        navigation.navigate('Resultado', { imageUri: uri });
+      }
+    } catch (error) {
+      console.error('Erro ao abrir galeria:', error);
     }
   };
 
-  const handlePhotoCaptured = (imagePath: string) => {
-    setShowCamera(false); // Fecha a câmera
-    setPreviewImage(imagePath); // Abre o modo de pré-visualização
-  };
-
-  const handleAnalyze = () => {
-    Alert.alert("Análise Iniciada", "Na próxima Sprint, o modelo YOLO será executado aqui!");
-  };
-
-  // Tela de previsualização da imagem capturada ou selecionada
-  if (previewImage) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="contain" />
-          
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewTitle}>Revisão da Imagem</Text>
-          </View>
-
-          <View style={styles.previewFooter}>
-            <TouchableOpacity 
-              style={[styles.previewButton, styles.buttonDiscard]} 
-              onPress={() => setPreviewImage(null)}
-            >
-              <Text style={styles.buttonDiscardText}>Descartar</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.previewButton, styles.buttonAnalyze]} 
-              onPress={handleAnalyze}
-            >
-              <Text style={styles.buttonText}>Contar Itens</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // TELA PRINCIPAL (DASHBOARD)
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scroll}>
-        
-        {/* Cabeçalho */}
+
         <View style={styles.header}>
           <View>
             <Text style={styles.subtitle}>Gestão de Ativos Inteligente</Text>
@@ -82,15 +33,15 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {/* Ações */}
         <Text style={styles.sectionTitle}>Nova Contagem</Text>
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={() => setShowCamera(true)}>
+          {/* Navega para a Câmera Nova! */}
+          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={() => navigation.navigate('Camera')}>
             <Text style={styles.actionIcon}>📷</Text>
             <Text style={styles.actionTitle}>Câmera</Text>
             <Text style={styles.actionDesc}>Contagem em tempo real</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={handleOpenGallery}>
             <Text style={styles.actionIcon}>🖼️</Text>
             <Text style={styles.actionTitle}>Galeria</Text>
@@ -98,25 +49,20 @@ export function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Histórico */}
         <Text style={styles.sectionTitle}>Últimas Contagens</Text>
         <View style={styles.historyCard}>
           <View style={styles.historyInfo}>
-            <Text style={styles.historyDate}>01 Out 2026 - 09:30</Text>
+            <Text style={styles.historyDate}>06 Out 2026 - 09:30</Text>
             <Text style={styles.historyLocal}>📍 Galpão Principal</Text>
             <Text style={styles.historyItems}>15x Mesa Bistrô, 4x Gradil</Text>
           </View>
+          {/* Navega para o Histórico Novo! */}
+          <TouchableOpacity onPress={() => navigation.navigate('Historico')}>
+            <Text style={styles.linkText}>Ver tudo</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
-
-      {/* Componente de Scanner de Câmera */}
-      {showCamera && (
-        <CameraScanner 
-          onClose={() => setShowCamera(false)} 
-          onPhotoCaptured={handlePhotoCaptured} 
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -145,15 +91,5 @@ const styles = StyleSheet.create({
   historyDate: { fontSize: 12, color: '#999', marginBottom: 4 },
   historyLocal: { fontSize: 14, fontWeight: '500', color: '#1A1A1A', marginBottom: 4 },
   historyItems: { fontSize: 14, color: '#0056b3', fontWeight: '600' },
-  
-  previewContainer: { flex: 1, backgroundColor: '#000' },
-  previewImage: { flex: 1, width: '100%' },
-  previewHeader: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center' },
-  previewTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
-  previewFooter: { position: 'absolute', bottom: 40, left: 24, right: 24, flexDirection: 'row', justifyContent: 'space-between' },
-  previewButton: { flex: 1, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginHorizontal: 8 },
-  buttonDiscard: { backgroundColor: '#333' },
-  buttonDiscardText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  buttonAnalyze: { backgroundColor: '#0056b3' },
-  buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  linkText: { color: '#007AFF', fontWeight: 'bold' }
 });
