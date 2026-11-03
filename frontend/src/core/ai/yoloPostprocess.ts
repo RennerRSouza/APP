@@ -69,12 +69,21 @@ export function iou(a: BoundingBox, b: BoundingBox): number {
   return union <= 0 ? 0 : inter / union;
 }
 
-/** NMS por classe (objetos de classes diferentes podem se sobrepor). */
-export function nms(dets: Detection[], iouThreshold: number): Detection[] {
+/** NMS por classe com IoU calibrado conforme a restrição do Épico 4 */
+export function nms(dets: Detection[], baseIouThreshold: number): Detection[] {
   const sorted = [...dets].sort((a, b) => b.score - a.score);
   const kept: Detection[] = [];
+  
   for (const d of sorted) {
-    if (!kept.some(k => k.classId === d.classId && iou(k.box, d.box) > iouThreshold)) {
+    // Aplicação da regra do Roadmap Técnico (Seção 3.5):
+    // Limiar de 0.60 para Gradis (assumindo id 1) e 0.50 global.
+    const currentThreshold = d.label.toLowerCase().includes('gradil') ? 0.60 : baseIouThreshold;
+
+    const isSuppressed = kept.some(k => 
+      k.classId === d.classId && iou(k.box, d.box) > currentThreshold
+    );
+    
+    if (!isSuppressed) {
       kept.push(d);
     }
   }
