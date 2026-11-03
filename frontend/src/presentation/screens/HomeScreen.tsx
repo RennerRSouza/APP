@@ -12,7 +12,6 @@ export function HomeScreen({ navigation }: Props) {
     try {
       const uri = await pickImage();
       if (uri) {
-        // Se escolheu na galeria, pula o preview e vai direto para a IA
         navigation.navigate('Resultado', { imageUri: uri });
       }
     } catch (error) {
