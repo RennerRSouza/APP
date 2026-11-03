@@ -19,7 +19,7 @@ const ModelSchema = z.object({
   input_specification: z.string(),
   output_decoder: z.string(),
   class_id_mapping: z.string(),
-  confidence_thresholds: z.record(NullableNumberSchema),
+  confidence_thresholds: z.record(z.string(), NullableNumberSchema),
 });
 
 const AlternativeEvidenceSchema = z.object({
@@ -47,8 +47,8 @@ const JointPairingSchema = z.object({
   pair_size: z.number(),
   tables_per_pair: z.number(),
   method: z.string(),
-  geometry: z.record(z.any()),
-  constraints: z.record(z.any()),
+  geometry: z.record(z.string(), z.any()),
+  constraints: z.record(z.string(), z.any()),
 }).partial();
 
 const PartialTablesSchema = z.object({
@@ -92,7 +92,12 @@ const RootSchema = z.object({
 export function validateWithZod(obj: unknown) {
   const res = RootSchema.safeParse(obj);
   if (res.success) return { success: true as const, value: res.data };
-  return { success: false as const, errors: res.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) };
+  return {
+  success: false as const,
+  errors: res.error.issues.map(
+    (e) => `${e.path.join('.')}: ${e.message}`
+  ),
+};
 }
 
 // Lightweight runtime checks that avoid adding dependencies. Returns array of error messages (empty => ok).
