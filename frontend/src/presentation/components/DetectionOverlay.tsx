@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Image, StyleSheet, View, Text, Dimensions} from 'react-native';
-import {theme} from '../../core/theme';
+import {Image, StyleSheet, View, Text} from 'react-native';
 import {Detection} from '../../domain/entities/Detection';
 
 // Paleta visual para distinção de classes na contagem
@@ -23,7 +22,7 @@ export function DetectionOverlay({uri, detections}: {uri: string; detections: De
       <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="contain" />
       
       {detections.map((d, i) => {
-        const color = CLASS_COLORS[d.label] || CLASS_COLORS['Default'];
+        const color = CLASS_COLORS[d.label] || CLASS_COLORS.Default;
         return (
           <View
             key={i}

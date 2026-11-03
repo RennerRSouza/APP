@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AppNavigator } from './src/presentation/navigation/AppNavigator';
 import { runMigrations } from './src/core/database/database';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function App() {
   const [dbReady, setDbReady] = useState(false);
@@ -14,7 +14,7 @@ export default function App() {
 
   if (!dbReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}> 
         <ActivityIndicator size="large" />
         <Text>Preparando banco offline...</Text>
       </View>
@@ -23,3 +23,7 @@ export default function App() {
 
   return <AppNavigator />;
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' }
+});

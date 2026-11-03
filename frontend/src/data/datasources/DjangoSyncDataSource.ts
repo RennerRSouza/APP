@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 import {Contagem} from '../../domain/entities/Contagem';
 
 // No Emulador Android: 10.0.2.2 aponta para o localhost do seu computador.
