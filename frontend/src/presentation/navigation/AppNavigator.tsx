@@ -19,7 +19,7 @@ export function AppNavigator() {
           headerStyle: {backgroundColor: theme.colors.surface},
           headerTintColor: theme.colors.text,
           contentStyle: {backgroundColor: theme.colors.bg},
-          headerShown: false // Removemos a barra de navegação padrão da Home para ficar mais bonito
+          headerShown: false
         }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Camera" component={CameraScreen} options={{title: 'Capturar Imagem', headerShown: true}} />
