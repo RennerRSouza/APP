@@ -74,7 +74,7 @@ export function ResultScreen({route, navigation}: Props) {
       <DetectionOverlay uri={imageUri} detections={resultado.detections} />
 
       <Text style={styles.muted}>
-        Modelo detectou {resultado.total} • {resultado.duracaoMs} ms
+         Modelo detectou {resultado.total} objetos em {resultado.duracaoMs} ms
       </Text>
 
       {Object.entries(resultado.porClasse).map(([k, v]) => (
