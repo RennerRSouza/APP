@@ -70,23 +70,15 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
             return (
               <View
                 key={index}
-                style={{
-                  position: 'absolute',
-                  left: left,
-                  
-                  // 12 pixels de largura para a linha sempre ser visível
-                  width: Math.max(width, 12), 
-                  
-                  // Centraliza a linha no meio da altura do objeto detectado
-                  top: top + (height / 2), 
-                  height: 4, 
-                  backgroundColor: color, 
-                  borderRadius: 2,
-                  
-                  // Garante a elevação máxima no Android
-                  zIndex: 999, 
-                  elevation: 10,
-                }}
+                style={[
+                  styles.linhaMarcacao,
+                  {
+                    left: left,
+                    width: Math.max(width, 12), 
+                    top: top + (height / 2), 
+                    backgroundColor: color, 
+                  }
+                ]}
               />
             );
           })}
@@ -104,4 +96,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 8,
   },
+  linhaMarcacao: {
+    position: 'absolute',
+    height: 4, 
+    borderRadius: 2,
+    zIndex: 999, 
+    elevation: 10,
+  }
 });

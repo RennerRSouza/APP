@@ -1,5 +1,5 @@
 import { loadTensorflowModel, TensorflowModel } from 'react-native-fast-tflite';
-import { Image, Platform, Alert } from 'react-native';
+import { Image, Platform } from 'react-native';
 import RNFS from 'react-native-fs';
 import { Detection } from '../../domain/entities/Detection';
 import { ObjectDetector } from '../../domain/repositories/ObjectDetector';

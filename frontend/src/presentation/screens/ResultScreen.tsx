@@ -73,7 +73,7 @@ export function ResultScreen({ route, navigation }: Props) {
   const houveAlteracao = confirmado !== resultado.total;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.containerFlex}>
       <ScrollView contentContainerStyle={styles.content}>
         
         {/* Contêiner da Imagem + Caixas + Placar */}
@@ -137,6 +137,7 @@ export function ResultScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  containerFlex: { flex: 1 },
   content: { padding: theme.spacing.md, gap: theme.spacing.md, paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: theme.spacing.md, padding: theme.spacing.lg },
   imageWrapper: {
