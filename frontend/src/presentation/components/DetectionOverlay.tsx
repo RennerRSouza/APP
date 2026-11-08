@@ -7,6 +7,8 @@ import { Detection } from '../../domain/entities/Detection';
 interface DetectionOverlayProps {
   uri: string;
   detections: Detection[];
+  cameraPitch?: number | null;
+  cameraRoll?: number | null;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -17,7 +19,12 @@ const COLOR_MAP: Record<string, string> = {
 
 const DEFAULT_COLOR = '#FFD700';
 
-export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detections }) => {
+export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ 
+  uri, 
+  detections, 
+  cameraPitch, 
+  cameraRoll 
+}) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const [imgLayout, setImgLayout] = useState({ width: 0, height: 0 });
@@ -36,9 +43,9 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
     transform: [{ scale: scale.value }],
   }));
 
-  // Seguro de layout: se o React Native ainda não calculou a tela, usamos 400 temporariamente.
   const scaleX = imgLayout.width > 0 ? imgLayout.width : 400;
   const scaleY = imgLayout.height > 0 ? imgLayout.height : 400;
+  const rotacaoDeg = cameraRoll ? `${cameraRoll}deg` : '0deg';
 
   return (
     <GestureDetector gesture={pinchGesture}>
@@ -57,7 +64,6 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
           resizeMode="contain"
         />
         
-        {/* Camada exclusiva para as linhas coloridas garantindo que elas fiquem por cima */}
         <View style={StyleSheet.absoluteFill}>
           {detections.map((det, index) => {
             const color = COLOR_MAP[det.label] || DEFAULT_COLOR;
@@ -77,6 +83,9 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
                     width: Math.max(width, 12), 
                     top: top + (height / 2), 
                     backgroundColor: color, 
+                    transform: [
+                      { rotateZ: rotacaoDeg }
+                    ]
                   }
                 ]}
               />

@@ -39,7 +39,7 @@ export function useContagemFlow(imageUri: string) {
   const divergenciaPercentual = totalIA > 0 ? (delta / totalIA) * 100 : (confirmado > 0 ? 100 : 0);
   const exigeJustificativa = divergenciaPercentual > 10.0;
 
-  const salvar = useCallback(async () => {
+  const salvar = useCallback(async (cameraPitch?: number | null, cameraRoll?: number | null) => {
     if (state.status !== 'done') {
       return;
     }
@@ -53,6 +53,8 @@ export function useContagemFlow(imageUri: string) {
         resultado: state.resultado,
         totalConfirmado: confirmado,
         justificativa: justificativa.trim() || undefined,
+        cameraPitch,
+        cameraRoll,
       });
     } finally {
       setSaving(false);

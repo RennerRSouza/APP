@@ -1,6 +1,10 @@
 export type RootStackParamList = {
   Home: undefined;
   Camera: undefined;
-  Resultado: { imageUri: string };
+  Resultado: { 
+    imageUri: string;
+    cameraPitch?: number | null;
+    cameraRoll?: number | null;
+  };
   Historico: undefined;
 };

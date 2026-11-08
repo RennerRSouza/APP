@@ -15,6 +15,10 @@ const MIGRATIONS: string[] = [
    )`,
   // Versão 2: Suporte a justificativa de divergência da IA (Integração SIGA Django)
   `ALTER TABLE contagens ADD COLUMN justificativa TEXT;`,
+  // Versão 3: Adição da telemetria de sensores (Ângulo da Câmera)
+  `ALTER TABLE contagens ADD COLUMN camera_pitch REAL;`,
+  // Versão 4: Adição da telemetria de sensores (Roll da Câmera)
+  `ALTER TABLE contagens ADD COLUMN camera_roll REAL;`,
 ];
 
 export const db = open({name: 'contador.db'});

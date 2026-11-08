@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Alert, StyleSheet, Text, View, Image } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission, usePhotoOutput } from 'react-native-vision-camera';
 import { pickImage } from '../../core/gallery/pickImage';
 import { theme } from '../../core/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RootStackParamList } from '../navigation/types';
+import { useCameraAngle } from '../hooks/useCameraAngle';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Camera'>;
 
@@ -13,9 +14,13 @@ export function CameraScreen({ navigation }: Props) {
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
   const photoOutput = usePhotoOutput({});
+  
+  const angleRef = useCameraAngle();
 
   const [busy, setBusy] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  const [capturedAngle, setCapturedAngle] = useState<{ pitch: number | null, roll: number | null }>({ pitch: null, roll: null });
 
   useEffect(() => {
     if (!hasPermission) {
@@ -25,20 +30,18 @@ export function CameraScreen({ navigation }: Props) {
 
   const capturar = async () => {
     if (busy) return;
-
     setBusy(true);
 
     try {
-      const foto = await photoOutput.capturePhotoToFile(
-        {
-          flashMode: 'off',
-          enableShutterSound: false,
-        },
-        {}
-      );
+      const { pitch, roll } = angleRef.current;
+      setCapturedAngle({ pitch, roll });
+
+      const foto = await photoOutput.capturePhotoToFile({
+        flashMode: 'off',
+        enableShutterSound: false,
+      }, {});
 
       setPreviewImage(`file://${foto.filePath}`);
-
     } catch (e) {
       Alert.alert('Erro ao capturar', String(e));
     } finally {
@@ -50,7 +53,7 @@ export function CameraScreen({ navigation }: Props) {
     try {
       const uri = await pickImage();
       if (uri) {
-        // Envia direto para a tela de pré-visualização
+        setCapturedAngle({ pitch: null, roll: null });
         setPreviewImage(uri);
       }
     } catch (e) {
@@ -60,12 +63,16 @@ export function CameraScreen({ navigation }: Props) {
 
   const descartarFoto = () => {
     setPreviewImage(null);
+    setCapturedAngle({ pitch: null, roll: null });
   };
 
   const analisarFoto = () => {
     if (previewImage) {
-      // Envia para o processamento de imagem
-      navigation.navigate('Resultado', { imageUri: previewImage });
+      navigation.navigate('Resultado', { 
+        imageUri: previewImage,
+        cameraPitch: capturedAngle.pitch,
+        cameraRoll: capturedAngle.roll
+      });
     }
   }
 

@@ -10,6 +10,8 @@ export interface ContagemRow {
   criado_em: number;
   sincronizado: number;
   justificativa?: string | null;
+  camera_pitch?: number | null;
+  camera_roll?: number | null;
 }
 
 export const toRow = (c: Contagem): ContagemRow => ({

@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 import { theme } from '../../core/theme';
 import { DetectionOverlay } from '../components/DetectionOverlay';
 import { PlacarDeteccoes } from '../components/PlacarDeteccoes';
@@ -21,7 +20,7 @@ import { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'Resultado'>;
 
 export function ResultScreen({ route, navigation }: Props) {
-  const { imageUri } = route.params;
+  const { imageUri, cameraPitch, cameraRoll } = route.params;
   const {
     state,
     confirmado,
@@ -44,7 +43,8 @@ export function ResultScreen({ route, navigation }: Props) {
     }
 
     try {
-      await salvar();
+      // Repassamos os ângulos capturados para o hook salvar no banco
+      await salvar(cameraPitch, cameraRoll);
       navigation.replace('Historico');
     } catch (e) {
       Alert.alert('Não foi possível salvar', String(e));
@@ -78,7 +78,12 @@ export function ResultScreen({ route, navigation }: Props) {
         
         {/* Contêiner da Imagem + Caixas + Placar */}
         <View style={styles.imageWrapper}>
-          <DetectionOverlay uri={imageUri} detections={resultado.detections} />
+          <DetectionOverlay 
+            uri={imageUri} 
+            detections={resultado.detections} 
+            cameraPitch={cameraPitch} 
+            cameraRoll={cameraRoll} 
+          />
           <PlacarDeteccoes resultado={resultado} />
         </View>
 

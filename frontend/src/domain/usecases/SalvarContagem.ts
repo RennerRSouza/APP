@@ -14,6 +14,8 @@ export class SalvarContagem {
     resultado: ResultadoContagem;
     totalConfirmado: number;
     justificativa?: string;
+    cameraPitch?: number | null;
+    cameraRoll?: number | null;
   }): Promise<void> {
     const contagem: Contagem = {
       id: this.gerarId(),
@@ -25,6 +27,8 @@ export class SalvarContagem {
       criadoEm: Date.now(),
       sincronizado: false,
       justificativa: params.justificativa,
+      cameraPitch: params.cameraPitch ?? null,
+      cameraRoll: params.cameraRoll ?? null,
     };
     
     await this.repo.salvar(contagem);
