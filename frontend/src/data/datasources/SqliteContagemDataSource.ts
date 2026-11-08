@@ -5,8 +5,8 @@ export class SqliteContagemDataSource {
   async insert(r: ContagemRow): Promise<void> {
     await db.execute(
       `INSERT OR REPLACE INTO contagens
-       (id, image_uri, total_detectado, total_confirmado, por_classe, modelo_versao, criado_em, sincronizado, justificativa)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
+       (id, image_uri, total_detectado, total_confirmado, por_classe, modelo_versao, criado_em, sincronizado, justificativa, camera_pitch, camera_roll, latitude, longitude, endereco)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         r.id,
         r.image_uri,
@@ -17,6 +17,11 @@ export class SqliteContagemDataSource {
         r.criado_em,
         r.sincronizado,
         r.justificativa ?? null,
+        r.camera_pitch ?? null,
+        r.camera_roll ?? null,
+        r.latitude ?? null,
+        r.longitude ?? null,
+        r.endereco ?? null,
       ],
     );
   }

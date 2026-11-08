@@ -8,4 +8,9 @@ export interface Contagem {
   criadoEm: number;        // Timestamp (epoch ms)
   sincronizado: boolean;
   justificativa?: string;   // Obrigatória se a divergência > 10% (exigência do SIGA Django)
+  cameraPitch?: number | null;
+  cameraRoll?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  endereco?: string | null;
 }
