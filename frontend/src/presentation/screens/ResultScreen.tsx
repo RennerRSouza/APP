@@ -84,7 +84,6 @@ export function ResultScreen({ route, navigation }: Props) {
             cameraPitch={cameraPitch} 
             cameraRoll={cameraRoll} 
           />
-          <PlacarDeteccoes resultado={resultado} />
         </View>
 
         <Text style={styles.label}>Ajuste manual da contagem total:</Text>
@@ -136,6 +135,10 @@ export function ResultScreen({ route, navigation }: Props) {
           onPress={onSalvar}
           disabled={saving}
         />
+
+        {/* PLACAR DE DETECÇÕES MOVIDO PARA O FINAL DA TELA */}
+        <PlacarDeteccoes resultado={resultado} />
+        
       </ScrollView>
     </GestureHandlerRootView>
   );
