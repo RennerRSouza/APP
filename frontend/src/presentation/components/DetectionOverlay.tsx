@@ -13,6 +13,7 @@ const COLOR_MAP: Record<string, string> = {
   'table_joint': '#32CD32',
   'Black-Fold-Table': '#FF3B30',
   'Brown-Fold-Table': '#007AFF',
+  'Gradil': '#FF9500',
 };
 
 const DEFAULT_COLOR = '#FFD700';

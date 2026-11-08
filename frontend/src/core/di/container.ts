@@ -7,10 +7,9 @@ import {SalvarContagem} from '../../domain/usecases/SalvarContagem';
 import {ObjectDetector} from '../../domain/repositories/ObjectDetector';
 // Importação do nosso YOLO verdadeiro que consertamos
 import {YoloDetector} from '../ai/YoloDetector';
+import {MODEL_VERSION} from '../ai/modelConfig';
 import {persistImage} from '../media/persistImage';
 import {gerarId} from '../utils/id';
-
-export const MODEL_VERSION = 'YOLO26n-v1.0';
 
 // 1. DataSources e APIs
 const sqliteDs = new SqliteContagemDataSource();

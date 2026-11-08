@@ -6,12 +6,14 @@ import { ObjectDetector } from '../../domain/repositories/ObjectDetector';
 import { preprocessImage } from './imagePreprocess';
 import {
   CLASS_NAMES,
-  INPUT_SIZE,
+  CLASS_SCORE_THRESHOLDS,
+  INVENTORY_CONTRACT,
   IOU_THRESHOLD,
   NORMALIZED_COORDS,
   SCORE_THRESHOLD,
 } from './modelConfig';
 import { decodeYolo } from './yoloPostprocess';
+import { getProductionReadinessErrors } from './inventoryContractValidator';
 
 export class YoloDetector implements ObjectDetector {
   private model: TensorflowModel | null = null;
@@ -45,33 +47,33 @@ export class YoloDetector implements ObjectDetector {
   }
 
   async detect(imageUri: string): Promise<Detection[]> {
+    if (!__DEV__) {
+      const readinessErrors = getProductionReadinessErrors(INVENTORY_CONTRACT);
+      if (readinessErrors.length > 0) {
+        throw new Error(`Inventory model is not production-ready: ${readinessErrors.join(' ')}`);
+      }
+    }
+
     const model = await this.load();
-    
     const inputTensor = model.inputs[0];
     const outputShape = model.outputs[0].shape;
-    const isNHWC = inputTensor.shape[inputTensor.shape.length - 1] === 3;
+    const inputShape = inputTensor.shape;
+    const isNHWC = inputShape[inputShape.length - 1] === 3;
+    const inputSize = inputShape[isNHWC ? 1 : inputShape.length - 1];
 
-    // 1. Recebemos a matriz numérica das cores
-    const inputFloats = await preprocessImage(imageUri, INPUT_SIZE, isNHWC);
+    const inputFloats = await preprocessImage(imageUri, inputSize, isNHWC);
 
-    // 2. Extraímos a memória base (.buffer) e criamos um clone (.slice(0)).
-    // Usamos 'as ArrayBuffer' para calar o TypeScript sobre o 'SharedArrayBuffer'.
     const clonedBuffer = inputFloats.buffer.slice(0) as ArrayBuffer;
-
-    // 3. Executamos de forma sincrona
     const result = model.runSync([clonedBuffer]);
-
-    // 4. A resposta da V3 já vem como ArrayBuffer limpo
     const outputBuffer = result[0] as ArrayBuffer;
-    
-    // 5. Criamos uma lente matemática para ler os números das caixas
     const outputFloats = new Float32Array(outputBuffer);
 
     const deteccoes = decodeYolo(outputFloats, {
       classNames: CLASS_NAMES,
+      classScoreThresholds: CLASS_SCORE_THRESHOLDS,
       scoreThreshold: SCORE_THRESHOLD,
       iouThreshold: IOU_THRESHOLD,
-      inputSize: INPUT_SIZE,
+      inputSize,
       normalizedCoords: NORMALIZED_COORDS,
     }, outputShape);
 

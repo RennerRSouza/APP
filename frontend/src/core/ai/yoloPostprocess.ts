@@ -2,6 +2,7 @@ import { BoundingBox, Detection } from '../../domain/entities/Detection';
 
 export interface PostprocessConfig {
   classNames: readonly string[];
+  classScoreThresholds?: Readonly<Record<string, number>>;
   scoreThreshold: number;
   iouThreshold: number;
   inputSize: number;
@@ -11,13 +12,12 @@ export interface PostprocessConfig {
 export function decodeYolo(output: Float32Array, cfg: PostprocessConfig, outputShape: number[]): Detection[] {
   const nc = cfg.classNames.length;
   const elementsPerAnchor = 4 + nc;
-  
-  let numAnchors = 0;
-  let isTransposed = false;
-  
+
   const dimA = outputShape[outputShape.length - 2];
   const dimB = outputShape[outputShape.length - 1];
-  
+  let numAnchors: number;
+  let isTransposed: boolean;
+
   if (dimA === elementsPerAnchor) {
     numAnchors = dimB;
     isTransposed = false; 
@@ -25,7 +25,13 @@ export function decodeYolo(output: Float32Array, cfg: PostprocessConfig, outputS
     numAnchors = dimA;
     isTransposed = true; 
   } else {
-    numAnchors = output.length / elementsPerAnchor;
+    throw new Error(
+      `Output shape [${outputShape.join(', ')}] incompatible with ${nc} classes; expected an axis of ${elementsPerAnchor}.`,
+    );
+  }
+
+  if (output.length !== numAnchors * elementsPerAnchor) {
+    throw new Error(`Output buffer length ${output.length} does not match shape [${outputShape.join(', ')}].`);
   }
 
   // Se o modelo deu Pixels, dividimos por 640. Se deu %, multiplicamos por 1
@@ -47,7 +53,8 @@ export function decodeYolo(output: Float32Array, cfg: PostprocessConfig, outputS
       }
     }
 
-    if (bestScore < cfg.scoreThreshold) {
+    const classThreshold = cfg.classScoreThresholds?.[cfg.classNames[best]] ?? cfg.scoreThreshold;
+    if (bestScore < classThreshold) {
       continue;
     }
 
