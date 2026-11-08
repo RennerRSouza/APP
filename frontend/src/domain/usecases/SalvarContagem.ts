@@ -1,39 +1,32 @@
-import {Contagem} from '../entities/Contagem';
-import {ContagemRepository} from '../repositories/ContagemRepository';
-import {ResultadoContagem} from './ContarObjetos';
-
-export interface SalvarContagemInput {
-  imageUri: string;
-  resultado: ResultadoContagem;
-  totalConfirmado: number;
-  justificativa?: string;
-}
+import { Contagem } from '../entities/Contagem';
+import { ContagemRepository } from '../repositories/ContagemRepository';
+import { ResultadoContagem } from './ContarObjetos';
 
 export class SalvarContagem {
   constructor(
     private readonly repo: ContagemRepository,
     private readonly gerarId: () => string,
-    private readonly modeloVersao: string,
+    private readonly modeloVersao: string
   ) {}
 
-  async execute({imageUri, resultado, totalConfirmado, justificativa}: SalvarContagemInput): Promise<Contagem> {
-    if (!Number.isInteger(totalConfirmado) || totalConfirmado < 0) {
-      throw new Error('totalConfirmado deve ser um inteiro >= 0');
-    }
-
+  async execute(params: {
+    imageUri: string;
+    resultado: ResultadoContagem;
+    totalConfirmado: number;
+    justificativa?: string;
+  }): Promise<void> {
     const contagem: Contagem = {
       id: this.gerarId(),
-      imageUri,
-      totalDetectado: resultado.total,
-      totalConfirmado,
-      porClasse: resultado.porClasse,
+      imageUri: params.imageUri,
+      totalDetectado: params.resultado.total,
+      totalConfirmado: params.totalConfirmado,
+      porClasse: params.resultado.porClasse,
       modeloVersao: this.modeloVersao,
       criadoEm: Date.now(),
       sincronizado: false,
-      justificativa: justificativa?.trim() || undefined,
+      justificativa: params.justificativa,
     };
-
+    
     await this.repo.salvar(contagem);
-    return contagem;
   }
 }
