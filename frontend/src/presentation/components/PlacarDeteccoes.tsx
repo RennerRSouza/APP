@@ -16,7 +16,7 @@ export const PlacarDeteccoes: React.FC<PlacarProps> = ({ resultado }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Resultados (Offline)</Text>
+      <Text style={styles.titulo}>Resultados Detalhados</Text>
       
       {Object.entries(resultado.porClasse).map(([classe, quantidade]) => (
         <View key={classe} style={styles.linhaClasse}>
@@ -39,26 +39,23 @@ export const PlacarDeteccoes: React.FC<PlacarProps> = ({ resultado }) => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: '#1A202C',
     padding: 16,
     borderRadius: 12,
-    minWidth: 160,
-    zIndex: 100,
+    marginTop: 8,
+    width: '100%',
   },
   titulo: {
     color: '#A0AEC0',
     fontSize: 12,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 12,
     textTransform: 'uppercase',
   },
   linhaClasse: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   textoClasse: {
     color: '#FFFFFF',
@@ -73,7 +70,7 @@ const styles = StyleSheet.create({
   divisor: {
     height: 1,
     backgroundColor: '#4A5568',
-    marginVertical: 8,
+    marginVertical: 10,
   },
   textoTotal: {
     color: '#FFFFFF',

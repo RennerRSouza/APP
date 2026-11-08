@@ -1,12 +1,41 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Platform, PermissionsAndroid } from 'react-native';
+import { useCameraPermission } from 'react-native-vision-camera';
+import Geolocation from '@react-native-community/geolocation';
 import { pickImage } from '../../core/gallery/pickImage';
 import { RootStackParamList } from '../navigation/types';
+import { useHistorico } from '../hooks/useHistorico';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const itemsHistorico = useHistorico();
+  const contagensRecentes = itemsHistorico.slice(0, 3);
+
+  useEffect(() => {
+    async function solicitarPermissoesIniciais() {
+      try {
+        if (!hasPermission) {
+          await requestPermission();
+        }
+
+        if (Platform.OS === 'android') {
+          const locationPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+          if (!locationPermission) {
+            await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+          }
+        } else {
+          Geolocation.requestAuthorization();
+        }
+      } catch (error) {
+        console.warn('Erro ao solicitar permissões iniciais:', error);
+      }
+    }
+
+    solicitarPermissoesIniciais();
+  }, [hasPermission, requestPermission]);
 
   const handleOpenGallery = async () => {
     try {
@@ -35,7 +64,6 @@ export function HomeScreen({ navigation }: Props) {
 
         <Text style={styles.sectionTitle}>Nova Contagem</Text>
         <View style={styles.actionRow}>
-          {/* Navega para a Câmera Nova! */}
           <TouchableOpacity style={styles.actionCard} activeOpacity={0.8} onPress={() => navigation.navigate('Camera')}>
             <Text style={styles.actionIcon}>📷</Text>
             <Text style={styles.actionTitle}>Câmera</Text>
@@ -49,18 +77,40 @@ export function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Últimas Contagens</Text>
-        <View style={styles.historyCard}>
-          <View style={styles.historyInfo}>
-            <Text style={styles.historyDate}>06 Out 2026 - 09:30</Text>
-            <Text style={styles.historyLocal}>📍 Galpão Principal</Text>
-            <Text style={styles.historyItems}>15x Mesa Bistrô, 4x Gradil</Text>
-          </View>
-          {/* Navega para o Histórico Novo! */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitleNoMargin}>Últimas Contagens</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Historico')}>
             <Text style={styles.linkText}>Ver tudo</Text>
           </TouchableOpacity>
         </View>
+
+        {contagensRecentes.length === 0 ? (
+          <Text style={styles.emptyText}>Nenhuma contagem salva ainda.</Text>
+        ) : (
+          contagensRecentes.map((item) => {
+            const dataFormatada = new Date(item.criadoEm).toLocaleString();
+            
+            const local = item.endereco 
+              ? item.endereco 
+              : (item.latitude && item.longitude ? `${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}` : 'Local não identificado');
+            
+            const resumoItens = Object.entries(item.porClasse)
+              .map(([classe, qtd]) => `${qtd}x ${classe.replace(/_/g, ' ')}`)
+              .join(', ');
+
+            const textoFinal = `Total: ${item.totalConfirmado} (${resumoItens})`;
+
+            return (
+              <View key={item.id} style={styles.historyCard}>
+                <View style={styles.historyInfo}>
+                  <Text style={styles.historyDate}>{dataFormatada}</Text>
+                  <Text style={styles.historyLocal} numberOfLines={1}>📍 {local}</Text>
+                  <Text style={styles.historyItems} numberOfLines={1}>{textoFinal}</Text>
+                </View>
+              </View>
+            );
+          })
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -81,6 +131,9 @@ const styles = StyleSheet.create({
   statusTitle: { fontSize: 14, fontWeight: 'bold', color: '#2E7D32' },
   statusSubtitle: { fontSize: 12, color: '#388E3C', marginTop: 2 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 16 },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitleNoMargin: { fontSize: 18, fontWeight: '600', color: '#1A1A1A' },
+  emptyText: { color: '#999', fontSize: 14, fontStyle: 'italic', textAlign: 'center', marginTop: 16 },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
   actionCard: { flex: 1, backgroundColor: '#FFFFFF', padding: 20, borderRadius: 16, marginHorizontal: 4, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   actionIcon: { fontSize: 32, marginBottom: 12 },

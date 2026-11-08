@@ -7,6 +7,8 @@ import { Detection } from '../../domain/entities/Detection';
 interface DetectionOverlayProps {
   uri: string;
   detections: Detection[];
+  cameraPitch?: number | null;
+  cameraRoll?: number | null;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -19,7 +21,10 @@ const COLOR_MAP: Record<string, string> = {
 const DEFAULT_COLOR = '#FFD700';
 const MARKER_SIZE = 14;
 
-export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detections }) => {
+export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
+  uri,
+  detections,
+}) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const [imgLayout, setImgLayout] = useState({ width: 0, height: 0 });
@@ -38,7 +43,6 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
     transform: [{ scale: scale.value }],
   }));
 
-  // Seguro de layout: se o React Native ainda não calculou a tela, usamos 400 temporariamente.
   const scaleX = imgLayout.width > 0 ? imgLayout.width : 400;
   const scaleY = imgLayout.height > 0 ? imgLayout.height : 400;
 
