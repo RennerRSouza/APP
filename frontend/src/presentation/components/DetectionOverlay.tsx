@@ -17,6 +17,7 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 const DEFAULT_COLOR = '#FFD700';
+const MARKER_SIZE = 14;
 
 export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detections }) => {
   const scale = useSharedValue(1);
@@ -58,26 +59,22 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detecti
           resizeMode="contain"
         />
         
-        {/* Camada exclusiva para as linhas coloridas garantindo que elas fiquem por cima */}
+        {/* Camada exclusiva para os marcadores coloridos, acima da imagem */}
         <View style={StyleSheet.absoluteFill}>
           {detections.map((det, index) => {
             const color = COLOR_MAP[det.label] || DEFAULT_COLOR;
-
-            const left = det.box.x * scaleX;
-            const top = det.box.y * scaleY;
-            const width = det.box.width * scaleX;
-            const height = det.box.height * scaleY;
+            const centerX = (det.box.x + det.box.width / 2) * scaleX;
+            const centerY = (det.box.y + det.box.height / 2) * scaleY;
 
             return (
               <View
                 key={index}
                 style={[
-                  styles.linhaMarcacao,
+                  styles.detectionMarker,
                   {
-                    left: left,
-                    width: Math.max(width, 12), 
-                    top: top + (height / 2), 
-                    backgroundColor: color, 
+                    left: centerX - MARKER_SIZE / 2,
+                    top: centerY - MARKER_SIZE / 2,
+                    backgroundColor: color,
                   }
                 ]}
               />
@@ -97,10 +94,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 8,
   },
-  linhaMarcacao: {
+  detectionMarker: {
     position: 'absolute',
-    height: 4, 
-    borderRadius: 2,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    borderRadius: MARKER_SIZE / 2,
+    borderWidth: 2,
+    borderColor: '#fff',
     zIndex: 999, 
     elevation: 10,
   }
