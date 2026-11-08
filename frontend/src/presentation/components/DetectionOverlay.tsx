@@ -15,14 +15,15 @@ const COLOR_MAP: Record<string, string> = {
   'table_joint': '#32CD32',
   'Black-Fold-Table': '#FF3B30',
   'Brown-Fold-Table': '#007AFF',
+  'Gradil': '#FF9500',
 };
 
 const DEFAULT_COLOR = '#FFD700';
+const MARKER_SIZE = 14;
 
-export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ 
-  uri, 
-  detections, 
-  cameraRoll 
+export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
+  uri,
+  detections,
 }) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -44,7 +45,6 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
 
   const scaleX = imgLayout.width > 0 ? imgLayout.width : 400;
   const scaleY = imgLayout.height > 0 ? imgLayout.height : 400;
-  const rotacaoDeg = cameraRoll ? `${cameraRoll}deg` : '0deg';
 
   return (
     <GestureDetector gesture={pinchGesture}>
@@ -63,28 +63,22 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
           resizeMode="contain"
         />
         
+        {/* Camada exclusiva para os marcadores coloridos, acima da imagem */}
         <View style={StyleSheet.absoluteFill}>
           {detections.map((det, index) => {
             const color = COLOR_MAP[det.label] || DEFAULT_COLOR;
-
-            const left = det.box.x * scaleX;
-            const top = det.box.y * scaleY;
-            const width = det.box.width * scaleX;
-            const height = det.box.height * scaleY;
+            const centerX = (det.box.x + det.box.width / 2) * scaleX;
+            const centerY = (det.box.y + det.box.height / 2) * scaleY;
 
             return (
               <View
                 key={index}
                 style={[
-                  styles.linhaMarcacao,
+                  styles.detectionMarker,
                   {
-                    left: left,
-                    width: Math.max(width, 12), 
-                    top: top + (height / 2), 
-                    backgroundColor: color, 
-                    transform: [
-                      { rotateZ: rotacaoDeg }
-                    ]
+                    left: centerX - MARKER_SIZE / 2,
+                    top: centerY - MARKER_SIZE / 2,
+                    backgroundColor: color,
                   }
                 ]}
               />
@@ -104,10 +98,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 8,
   },
-  linhaMarcacao: {
+  detectionMarker: {
     position: 'absolute',
-    height: 4, 
-    borderRadius: 2,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    borderRadius: MARKER_SIZE / 2,
+    borderWidth: 2,
+    borderColor: '#fff',
     zIndex: 999, 
     elevation: 10,
   }

@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "id": "event_rental_inventory_photo_count",
   "configuration_status": "requires_calibration",
   "execution": {
@@ -11,15 +11,21 @@
   "model": {
     "runtime": "tflite",
     "source_model": "event-rental-inventory",
-    "source_version": 11,
-    "asset_path": null,
+    "source_version": 14,
+    "asset_path": "assets/models/yolo.tflite",
     "input_specification": "read_from_exported_model",
     "output_decoder": "match_exported_model",
-    "class_id_mapping": "read_from_export_metadata",
+    "class_id_mapping": {
+      "0": "Black-Fold-Table",
+      "1": "Brown-Fold-Table",
+      "2": "Gradil",
+      "3": "table_joint"
+    },
     "confidence_thresholds": {
       "Black-Fold-Table": null,
       "Brown-Fold-Table": null,
-      "table_joint": null
+      "table_joint": null,
+      "Gradil": null
     }
   },
   "classes": {
@@ -28,11 +34,9 @@
       "Brown-Fold-Table"
     ],
     "primary_counting_evidence": "table_joint",
-    "alternative_evidence": {
-      "class_name": "side_joint",
-      "enabled": false,
-      "requires_validated_model": true
-    }
+    "direct_count_objects": [
+      "Gradil"
+    ]
   },
   "coordinates": {
     "reference": "orientation_corrected_original_photo",
@@ -50,10 +54,17 @@
     "pair_joints",
     "resolve_partial_tables",
     "associate_table_objects",
-    "count_unique_tables"
+    "count_unique_tables",
+    "count_direct_objects",
+    "aggregate_counts_by_category"
   ],
   "row_detection": {
     "method": "geometric_grouping",
+    "apply_to_classes": [
+      "Black-Fold-Table",
+      "Brown-Fold-Table",
+      "table_joint"
+    ],
     "separate_axis_per_row": true,
     "longitudinal_axis": "table_sequence_direction",
     "transverse_axis": "across_row_width",
@@ -74,8 +85,23 @@
     "merge_full_photo_and_crop_detections": true,
     "matching_space": "original_photo",
     "same_class_required": true,
-    "maximum_center_distance_in_joint_sizes": null,
-    "retain_detection_provenance": true
+    "retain_detection_provenance": true,
+    "matching_rules": {
+      "table_joint": {
+        "method": "center_distance",
+        "maximum_center_distance_in_joint_sizes": null
+      },
+      "table_objects": {
+        "method": "box_overlap_and_center_distance",
+        "minimum_iou": null,
+        "maximum_center_distance_in_object_sizes": null
+      },
+      "Gradil": {
+        "method": "box_overlap_and_center_distance",
+        "minimum_iou": null,
+        "maximum_center_distance_in_object_sizes": null
+      }
+    }
   },
   "joint_pairing": {
     "class_name": "table_joint",
@@ -119,22 +145,47 @@
     "conflicting_type_policy": "unknown"
   },
   "counting": {
-    "unit": "table",
-    "count_unique_table_hypotheses": true,
-    "include_valid_joint_pairs": true,
-    "include_supported_boundary_partial_tables": true,
-    "infer_tables_from_empty_spacing": false,
-    "fractional_table_counts": false,
-    "uncertain_candidates_in_identified_total": false,
-    "missing_evidence_result": "inconclusive"
+    "tables": {
+      "unit": "table",
+      "count_unique_table_hypotheses": true,
+      "include_valid_joint_pairs": true,
+      "include_supported_boundary_partial_tables": true,
+      "infer_tables_from_empty_spacing": false,
+      "fractional_table_counts": false,
+      "uncertain_candidates_in_identified_total": false,
+      "missing_evidence_result": "inconclusive"
+    },
+    "direct_objects": {
+      "Gradil": {
+        "enabled": true,
+        "unit": "Gradil",
+        "method": "unique_valid_detections",
+        "objects_per_detection": 1,
+        "require_duplicate_reconciliation": true,
+        "require_table_joints": false,
+        "require_row_membership": false,
+        "apply_table_pairing_rules": false,
+        "infer_objects_from_empty_spacing": false,
+        "ambiguous_duplicate_policy": "mark_uncertain",
+        "partial_object_policy": "mark_uncertain",
+        "uncertain_candidates_in_identified_total": false,
+        "missing_evidence_result": "inconclusive"
+      }
+    },
+    "aggregation": {
+      "keep_category_counts_separate": true,
+      "include_combined_item_total": false,
+      "count_evidence_as_inventory_items": false
+    }
   },
   "output": {
-    "include_total_identified": true,
-    "include_counts_by_row": true,
-    "include_counts_by_type": true,
-    "include_unknown_type_count": true,
+    "include_total_identified_by_category": true,
+    "include_table_counts_by_row": true,
+    "include_table_counts_by_type": true,
+    "include_unknown_table_type_count": true,
+    "include_gradil_count": true,
     "include_uncertain_candidates": true,
-    "include_evidence_per_table": true,
+    "include_evidence_per_item": true,
     "display_boxes": false,
     "optional_debug_geometry": true,
     "claim_complete_inventory": false
@@ -143,6 +194,8 @@
     "require_calibration_before_production": true,
     "reject_missing_required_parameters": true,
     "require_valid_model_asset": true,
-    "require_matching_class_metadata": true
+    "require_matching_class_metadata": true,
+    "require_model_version_match": true,
+    "require_all_enabled_classes_in_model": true
   }
 }
