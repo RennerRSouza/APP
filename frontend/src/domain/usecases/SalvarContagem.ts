@@ -16,6 +16,9 @@ export class SalvarContagem {
     justificativa?: string;
     cameraPitch?: number | null;
     cameraRoll?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    endereco?: string | null;
   }): Promise<void> {
     const contagem: Contagem = {
       id: this.gerarId(),
@@ -29,6 +32,9 @@ export class SalvarContagem {
       justificativa: params.justificativa,
       cameraPitch: params.cameraPitch ?? null,
       cameraRoll: params.cameraRoll ?? null,
+      latitude: params.latitude ?? null,
+      longitude: params.longitude ?? null,
+      endereco: params.endereco ?? null,
     };
     
     await this.repo.salvar(contagem);

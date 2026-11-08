@@ -19,6 +19,10 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE contagens ADD COLUMN camera_pitch REAL;`,
   // Versão 4: Adição da telemetria de sensores (Roll da Câmera)
   `ALTER TABLE contagens ADD COLUMN camera_roll REAL;`,
+  // Novas versões para Localização
+  `ALTER TABLE contagens ADD COLUMN latitude REAL;`,
+  `ALTER TABLE contagens ADD COLUMN longitude REAL;`,
+  `ALTER TABLE contagens ADD COLUMN endereco TEXT;`,
 ];
 
 export const db = open({name: 'contador.db'});

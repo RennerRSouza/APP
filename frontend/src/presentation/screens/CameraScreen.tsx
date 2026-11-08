@@ -7,6 +7,7 @@ import { theme } from '../../core/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RootStackParamList } from '../navigation/types';
 import { useCameraAngle } from '../hooks/useCameraAngle';
+import { useAppLocation } from '../hooks/useAppLocation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Camera'>;
 
@@ -16,6 +17,7 @@ export function CameraScreen({ navigation }: Props) {
   const photoOutput = usePhotoOutput({});
   
   const angleRef = useCameraAngle();
+  const currentLocation = useAppLocation();
 
   const [busy, setBusy] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -71,7 +73,10 @@ export function CameraScreen({ navigation }: Props) {
       navigation.navigate('Resultado', { 
         imageUri: previewImage,
         cameraPitch: capturedAngle.pitch,
-        cameraRoll: capturedAngle.roll
+        cameraRoll: capturedAngle.roll,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        endereco: currentLocation.endereco
       });
     }
   }

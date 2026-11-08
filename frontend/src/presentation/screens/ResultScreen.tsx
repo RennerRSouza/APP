@@ -20,7 +20,7 @@ import { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'Resultado'>;
 
 export function ResultScreen({ route, navigation }: Props) {
-  const { imageUri, cameraPitch, cameraRoll } = route.params;
+  const { imageUri, cameraPitch, cameraRoll, latitude, longitude, endereco } = route.params;
   const {
     state,
     confirmado,
@@ -43,8 +43,7 @@ export function ResultScreen({ route, navigation }: Props) {
     }
 
     try {
-      // Repassamos os ângulos capturados para o hook salvar no banco
-      await salvar(cameraPitch, cameraRoll);
+      await salvar(cameraPitch, cameraRoll, latitude, longitude, endereco);
       navigation.replace('Historico');
     } catch (e) {
       Alert.alert('Não foi possível salvar', String(e));
@@ -55,7 +54,7 @@ export function ResultScreen({ route, navigation }: Props) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.muted}>Analisando imagem com YOLO (Offline)...</Text>
+        <Text style={styles.muted}>Analisando imagem...</Text>
       </View>
     );
   }
@@ -85,7 +84,6 @@ export function ResultScreen({ route, navigation }: Props) {
             cameraRoll={cameraRoll} 
           />
         </View>
-
         <Text style={styles.label}>Ajuste manual da contagem total:</Text>
         <View style={styles.row}>
           <PrimaryButton label="−" onPress={() => ajustar(-1)} variant="ghost" />
@@ -135,8 +133,6 @@ export function ResultScreen({ route, navigation }: Props) {
           onPress={onSalvar}
           disabled={saving}
         />
-
-        {/* PLACAR DE DETECÇÕES MOVIDO PARA O FINAL DA TELA */}
         <PlacarDeteccoes resultado={resultado} />
         
       </ScrollView>

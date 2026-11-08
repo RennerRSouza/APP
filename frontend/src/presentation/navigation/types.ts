@@ -5,6 +5,9 @@ export type RootStackParamList = {
     imageUri: string;
     cameraPitch?: number | null;
     cameraRoll?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    endereco?: string | null;
   };
   Historico: undefined;
 };

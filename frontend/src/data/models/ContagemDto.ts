@@ -1,4 +1,4 @@
-import {Contagem} from '../../domain/entities/Contagem';
+import { Contagem } from '../../domain/entities/Contagem';
 
 export interface ContagemRow {
   id: string;
@@ -12,6 +12,9 @@ export interface ContagemRow {
   justificativa?: string | null;
   camera_pitch?: number | null;
   camera_roll?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  endereco?: string | null;
 }
 
 export const toRow = (c: Contagem): ContagemRow => ({
@@ -24,6 +27,11 @@ export const toRow = (c: Contagem): ContagemRow => ({
   criado_em: c.criadoEm,
   sincronizado: c.sincronizado ? 1 : 0,
   justificativa: c.justificativa ?? null,
+  camera_pitch: c.cameraPitch ?? null,
+  camera_roll: c.cameraRoll ?? null,
+  latitude: c.latitude ?? null,
+  longitude: c.longitude ?? null,
+  endereco: c.endereco ?? null,
 });
 
 export const fromRow = (r: ContagemRow): Contagem => ({
@@ -36,4 +44,9 @@ export const fromRow = (r: ContagemRow): Contagem => ({
   criadoEm: r.criado_em,
   sincronizado: r.sincronizado === 1,
   justificativa: r.justificativa ?? undefined,
+  cameraPitch: r.camera_pitch ?? undefined,
+  cameraRoll: r.camera_roll ?? undefined,
+  latitude: r.latitude ?? undefined,
+  longitude: r.longitude ?? undefined,
+  endereco: r.endereco ?? undefined,
 });
