@@ -1,66 +1,107 @@
-import React, {useEffect, useState} from 'react';
-import {Image, StyleSheet, View, Text} from 'react-native';
-import {Detection} from '../../domain/entities/Detection';
+import React, { useState } from 'react';
+import { View, StyleSheet, Image } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { Detection } from '../../domain/entities/Detection';
 
-// Paleta visual para distinção de classes na contagem
-const CLASS_COLORS: Record<string, string> = {
-  'Mesa Bistrô': '#FF3B30', 
-  'Gradil': '#34C759',      
-  'Default': '#007AFF'
-};
-
-export function DetectionOverlay({uri, detections}: {uri: string; detections: Detection[]}) {
-  const [aspect, setAspect] = useState(4 / 3);
-
-  useEffect(() => {
-    Image.getSize(uri, (w, h) => setAspect(w / h), () => {});
-  }, [uri]);
-
-  return (
-    <View style={[styles.container, {aspectRatio: aspect}]}>
-      {/* TSK-09: A IA processa em letterbox, então a visualização DEVE respeitar o aspect original */}
-      <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="contain" />
-      
-      {detections.map((d, i) => {
-        const color = CLASS_COLORS[d.label] || CLASS_COLORS.Default;
-        return (
-          <View
-            key={i}
-            style={[
-              styles.box,
-              {
-                borderColor: color,
-                left: `${d.box.x * 100}%`,
-                top: `${d.box.y * 100}%`,
-                width: `${d.box.width * 100}%`,
-                height: `${d.box.height * 100}%`,
-              },
-            ]}
-          >
-            {/* Rótulo de Classe e Confiança exigido pela TSK-14 */}
-            <View style={[styles.labelContainer, { backgroundColor: color }]}>
-              <Text style={styles.labelText}>
-                {d.label} {(d.score * 100).toFixed(0)}%
-              </Text>
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
+interface DetectionOverlayProps {
+  uri: string;
+  detections: Detection[];
 }
 
+const COLOR_MAP: Record<string, string> = {
+  'table_joint': '#32CD32',
+  'Black-Fold-Table': '#FF3B30',
+  'Brown-Fold-Table': '#007AFF',
+};
+
+const DEFAULT_COLOR = '#FFD700';
+
+export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ uri, detections }) => {
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const [imgLayout, setImgLayout] = useState({ width: 0, height: 0 });
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      scale.value = savedScale.value * e.scale;
+    })
+    .onEnd(() => {
+      if (scale.value < 1) scale.value = 1;
+      if (scale.value > 4) scale.value = 4;
+      savedScale.value = scale.value;
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  // Seguro de layout: se o React Native ainda não calculou a tela, usamos 400 temporariamente.
+  const scaleX = imgLayout.width > 0 ? imgLayout.width : 400;
+  const scaleY = imgLayout.height > 0 ? imgLayout.height : 400;
+
+  return (
+    <GestureDetector gesture={pinchGesture}>
+      <Animated.View 
+        style={[styles.container, animatedStyle]}
+        onLayout={(e) => {
+          setImgLayout({ 
+            width: e.nativeEvent.layout.width, 
+            height: e.nativeEvent.layout.height 
+          });
+        }}
+      >
+        <Image 
+          source={{ uri }} 
+          style={StyleSheet.absoluteFill} 
+          resizeMode="contain"
+        />
+        
+        {/* Camada exclusiva para as linhas coloridas garantindo que elas fiquem por cima */}
+        <View style={StyleSheet.absoluteFill}>
+          {detections.map((det, index) => {
+            const color = COLOR_MAP[det.label] || DEFAULT_COLOR;
+
+            const left = det.box.x * scaleX;
+            const top = det.box.y * scaleY;
+            const width = det.box.width * scaleX;
+            const height = det.box.height * scaleY;
+
+            return (
+              <View
+                key={index}
+                style={{
+                  position: 'absolute',
+                  left: left,
+                  
+                  // 12 pixels de largura para a linha sempre ser visível
+                  width: Math.max(width, 12), 
+                  
+                  // Centraliza a linha no meio da altura do objeto detectado
+                  top: top + (height / 2), 
+                  height: 4, 
+                  backgroundColor: color, 
+                  borderRadius: 2,
+                  
+                  // Garante a elevação máxima no Android
+                  zIndex: 999, 
+                  elevation: 10,
+                }}
+              />
+            );
+          })}
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: {width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#000'},
-  box: {position: 'absolute', borderWidth: 2},
-  labelContainer: {
-    position: 'absolute',
-    top: -20,
-    left: -2,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+  container: {
+    width: '100%',
+    aspectRatio: 1, 
+    backgroundColor: '#000',
+    overflow: 'hidden',
+    borderRadius: 8,
   },
-  labelText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' }
 });

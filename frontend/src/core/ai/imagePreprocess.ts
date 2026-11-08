@@ -3,29 +3,52 @@ import { toByteArray } from 'base64-js';
 import jpeg from 'jpeg-js';
 import RNFS from 'react-native-fs';
 
-export async function preprocessImage(uri: string, size: number): Promise<Float32Array> {
-  // TSK-09: Letterbox nativo garantido via "contain"
+export async function preprocessImage(uri: string, size: number, isNHWC: boolean): Promise<Float32Array> {
   const resized = await ImageResizer.createResizedImage(
-    uri, size, size, 'JPEG', 85, 0, undefined, false, 
+    uri, size, size, 'JPEG', 100, 0, undefined, false, 
     { mode: 'contain', onlyScaleDown: false }
   );
 
   try {
     const b64 = await RNFS.readFile(resized.path, 'base64');
-    const { data } = jpeg.decode(toByteArray(b64), { useTArray: true, formatAsRGBA: true });
     
-    const out = new Float32Array(size * size * 3);
+    // Pegamos a largura e altura REAIS da imagem após o 'contain'
+    const { data, width, height } = jpeg.decode(toByteArray(b64), { useTArray: true, formatAsRGBA: true });
     
-    // ⚡ REVERSÃO TÉCNICA: Tensor NHWC [1, 640, 640, 3].
-    // Entregamos os canais R, G e B agrupados por pixel para bater com a arquitetura do modelo.
-    for (let i = 0, j = 0; i < data.length; i += 4) {
-      out[j++] = data[i] / 255.0;       // R
-      out[j++] = data[i + 1] / 255.0;   // G
-      out[j++] = data[i + 2] / 255.0;   // B
-      // O canal Alpha (i + 3) é descartado
+    // O Float32Array nasce automaticamente preenchido com 0.0 (Pixels Pretos)
+    const floatArray = new Float32Array(size * size * 3);
+    
+    // Calculamos a margem para centralizar a imagem menor dentro do quadrado 640x640
+    const offsetX = Math.floor((size - width) / 2);
+    const offsetY = Math.floor((size - height) / 2);
+    
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        // Posição do pixel na imagem menor
+        const srcPixelIdx = (y * width + x) * 4;
+        
+        const r = data[srcPixelIdx] / 255.0;
+        const g = data[srcPixelIdx + 1] / 255.0;
+        const b = data[srcPixelIdx + 2] / 255.0;
+        
+        // Posição final dentro do nosso tensor 640x640 (Letterbox)
+        const destX = x + offsetX;
+        const destY = y + offsetY;
+        const destPixelIdx = destY * size + destX;
+        
+        if (isNHWC) {
+          floatArray[destPixelIdx * 3 + 0] = r;
+          floatArray[destPixelIdx * 3 + 1] = g;
+          floatArray[destPixelIdx * 3 + 2] = b;
+        } else {
+          floatArray[destPixelIdx] = r;
+          floatArray[destPixelIdx + size * size] = g;
+          floatArray[destPixelIdx + size * size * 2] = b;
+        }
+      }
     }
     
-    return out;
+    return floatArray;
   } finally {
     RNFS.unlink(resized.path).catch(() => undefined);
   }

@@ -1,5 +1,5 @@
 import { loadTensorflowModel, TensorflowModel } from 'react-native-fast-tflite';
-import { Image, Platform } from 'react-native';
+import { Image, Platform, Alert } from 'react-native';
 import RNFS from 'react-native-fs';
 import { Detection } from '../../domain/entities/Detection';
 import { ObjectDetector } from '../../domain/repositories/ObjectDetector';
@@ -18,9 +18,7 @@ export class YoloDetector implements ObjectDetector {
   private loading: Promise<TensorflowModel> | null = null;
 
   private load(): Promise<TensorflowModel> {
-    if (this.model) {
-      return Promise.resolve(this.model);
-    }
+    if (this.model) return Promise.resolve(this.model);
 
     this.loading ??= (async () => {
       let finalSource = '';
@@ -28,19 +26,13 @@ export class YoloDetector implements ObjectDetector {
       if (__DEV__) {
         const modelAsset = require('../../../assets/models/yolo.tflite');
         const assetInfo = Image.resolveAssetSource(modelAsset);
-        
-        if (!assetInfo?.uri) {
-          throw new Error('Não foi possível resolver o modelo no Debug.');
-        }
+        if (!assetInfo?.uri) throw new Error('Modelo não resolvido no Debug.');
         finalSource = assetInfo.uri;
       } else if (Platform.OS === 'android') {
         const destPath = `${RNFS.DocumentDirectoryPath}/yolo.tflite`;
-        const exists = await RNFS.exists(destPath);
-        
-        if (!exists) {
+        if (!(await RNFS.exists(destPath))) {
           await RNFS.copyFileAssets('yolo.tflite', destPath);
         }
-        
         finalSource = `file://${destPath}`;
       }
 
@@ -54,19 +46,35 @@ export class YoloDetector implements ObjectDetector {
 
   async detect(imageUri: string): Promise<Detection[]> {
     const model = await this.load();
-    const input = await preprocessImage(imageUri, INPUT_SIZE);
+    
+    const inputTensor = model.inputs[0];
+    const outputShape = model.outputs[0].shape;
+    const isNHWC = inputTensor.shape[inputTensor.shape.length - 1] === 3;
 
-    const inputBuffer = new ArrayBuffer(input.byteLength);
-    new Float32Array(inputBuffer).set(input);
+    // 1. Recebemos a matriz numérica das cores
+    const inputFloats = await preprocessImage(imageUri, INPUT_SIZE, isNHWC);
 
-    const [raw] = await model.run([inputBuffer]);
+    // 2. Extraímos a memória base (.buffer) e criamos um clone (.slice(0)).
+    // Usamos 'as ArrayBuffer' para calar o TypeScript sobre o 'SharedArrayBuffer'.
+    const clonedBuffer = inputFloats.buffer.slice(0) as ArrayBuffer;
 
-    return decodeYolo(new Float32Array(raw), {
+    // 3. Executamos de forma sincrona
+    const result = model.runSync([clonedBuffer]);
+
+    // 4. A resposta da V3 já vem como ArrayBuffer limpo
+    const outputBuffer = result[0] as ArrayBuffer;
+    
+    // 5. Criamos uma lente matemática para ler os números das caixas
+    const outputFloats = new Float32Array(outputBuffer);
+
+    const deteccoes = decodeYolo(outputFloats, {
       classNames: CLASS_NAMES,
       scoreThreshold: SCORE_THRESHOLD,
       iouThreshold: IOU_THRESHOLD,
       inputSize: INPUT_SIZE,
       normalizedCoords: NORMALIZED_COORDS,
-    });
+    }, outputShape);
+
+    return deteccoes;
   }
 }
