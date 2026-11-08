@@ -22,7 +22,6 @@ const DEFAULT_COLOR = '#FFD700';
 export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ 
   uri, 
   detections, 
-  cameraPitch, 
   cameraRoll 
 }) => {
   const scale = useSharedValue(1);
