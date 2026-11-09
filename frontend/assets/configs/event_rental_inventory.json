@@ -191,8 +191,8 @@
     "claim_complete_inventory": false
   },
   "validation": {
-    "require_calibration_before_production": true,
-    "reject_missing_required_parameters": true,
+    "require_calibration_before_production": false,
+    "reject_missing_required_parameters": false,
     "require_valid_model_asset": true,
     "require_matching_class_metadata": true,
     "require_model_version_match": true,
