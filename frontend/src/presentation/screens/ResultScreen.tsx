@@ -35,7 +35,7 @@ export function ResultScreen({route, navigation}: Props) {
     if (exigeJustificativa && !justificativa.trim()) {
       Alert.alert(
         'Justificativa Obrigatória',
-        `A divergência foi de ${divergenciaPercentual.toFixed(1)}%, excedendo a tolerância de 10% da IA. Por favor, descreva o motivo da alteração antes de salvar.`,
+        `O ajuste manual foi de ${divergenciaPercentual.toFixed(1)}%, excedendo a margem para auditoria de 10%. Por favor, descreva o motivo da alteração antes de salvar.`,
       );
       return;
     }
@@ -102,8 +102,8 @@ export function ResultScreen({route, navigation}: Props) {
               styles.tituloAlerta,
               {color: exigeJustificativa ? theme.colors.danger : theme.colors.text},
             ]}>
-            Divergência da IA: {divergenciaPercentual.toFixed(1)}%
-            {exigeJustificativa ? ' (Excede tolerância de 10%)' : ''}
+            Ajuste manual: {divergenciaPercentual.toFixed(1)}%
+            {exigeJustificativa ? ' (Excede margem para auditoria de 10%)' : ''}
           </Text>
 
           {exigeJustificativa && (
