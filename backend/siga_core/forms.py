@@ -103,7 +103,7 @@ class RegraOperacionalForm(forms.ModelForm):
             'horario_fim',
         ]
         labels = {
-            'tolerancia_erro_ia_pct': 'Tolerância de Erro da IA (%)',
+            'tolerancia_erro_ia_pct': 'Margem para Auditoria (%)',
             'limite_edicao_manual_pct': 'Limite Máximo de Edição Manual (%)',
             'exige_justificativa': 'Exigir Justificativa em Divergências',
             'horario_inicio': 'Horário Inicial Permitido',
@@ -180,7 +180,7 @@ class ParametrosLocacaoForm(forms.ModelForm):
         labels = {
             'regiao': 'Cidade e Região de Atendimento',
             'dias_antecedencia_min': 'Antecedência Mínima para Reserva (Dias)',
-            'prazo_frete_dias_uteis': 'Prazo Estimado de Logística/Frete (Dias Úteis)',
+            'prazo_frete_dias_uteis': 'Prazo Estimado de Logística/Frete (Dias)',
             'disclaimer_legal': 'Termo / Disclaimer Legal do Portal Público',
         }
         widgets = {

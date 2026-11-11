@@ -73,7 +73,8 @@ class RegraOperacionalMobile(models.Model):
     )
     tolerancia_erro_ia_pct = models.DecimalField(
         max_digits=5, decimal_places=2, default=Decimal('10.0'),
-        help_text="Tolerância de imprecisão da IA (padrão 10%)"
+        verbose_name="Margem para Auditoria (%)",
+        help_text="Margem percentual de ajuste manual da contagem antes de exigir auditoria/justificativa (padrão 10%)"
     )
     exige_justificativa = models.BooleanField(default=True)
     horario_inicio = models.TimeField(null=True, blank=True)

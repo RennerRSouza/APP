@@ -45,7 +45,7 @@ export function useContagemFlow(imageUri: string) {
       return;
     }
     if (exigeJustificativa && !justificativa.trim()) {
-      throw new Error('A divergência supera 10% da IA. Justificativa obrigatória.');
+      throw new Error('O ajuste manual supera a margem para auditoria de 10%. Justificativa obrigatória.');
     }
     setSaving(true);
     try {

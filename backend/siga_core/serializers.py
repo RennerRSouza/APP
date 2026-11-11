@@ -84,12 +84,12 @@ class InventarioSyncSerializer(serializers.ModelSerializer):
 
             justificativa = (item.get('justificativa') or '').strip()
 
-            # 1. Checagem de obrigatoriedade de justificativa caso supere a tolerância de 10%
+            # 1. Checagem de obrigatoriedade de justificativa caso supere a margem para auditoria
             if divergencia_pct > tolerancia_ia and exige_justificativa and not justificativa:
                 raise serializers.ValidationError({
                     "justificativa": (
                         f"Justificativa obrigatória para '{classe_ativo.nome_classe}'. "
-                        f"A divergência foi de {divergencia_pct:.1f}% (tolerância máxima da IA: {tolerancia_ia}%)."
+                        f"O ajuste manual foi de {divergencia_pct:.1f}% (margem para auditoria: {tolerancia_ia}%)."
                     )
                 })
 

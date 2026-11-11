@@ -5,8 +5,8 @@
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
   <div>
-    <h1 class="h3 fw-bold mb-1">Políticas Operacionais do Mobile (IA)</h1>
-    <p class="text-muted mb-0">Parametrização da tolerância de erro da IA e margens de edição manual por perfil</p>
+    <h1 class="h3 fw-bold mb-1">Políticas Operacionais do Mobile</h1>
+    <p class="text-muted mb-0">Parametrização da margem para auditoria e limites de ajuste manual na contagem por perfil</p>
   </div>
 </div>
 
@@ -25,9 +25,9 @@
         </div>
         <div class="card-body p-4">
           <div class="mb-3">
-            <label class="form-label fw-semibold">Tolerância de Erro da IA (%)</label>
+            <label class="form-label fw-semibold">Margem para Auditoria (%)</label>
             {{ form_func.tolerancia_erro_ia_pct }}
-            <div class="form-text">Padrão: 10.0%. Variações acima deste valor disparam auditoria.</div>
+            <div class="form-text">Padrão: 10.0%. Ajustes manuais na contagem acima deste percentual disparam auditoria.</div>
           </div>
 
           <div class="mb-3">
@@ -68,9 +68,9 @@
         </div>
         <div class="card-body p-4">
           <div class="mb-3">
-            <label class="form-label fw-semibold">Tolerância de Erro da IA (%)</label>
+            <label class="form-label fw-semibold">Margem para Auditoria (%)</label>
             {{ form_terc.tolerancia_erro_ia_pct }}
-            <div class="form-text">Padrão: 10.0%. Variações acima deste valor disparam auditoria.</div>
+            <div class="form-text">Padrão: 10.0%. Ajustes manuais na contagem acima deste percentual disparam auditoria.</div>
           </div>
 
           <div class="mb-3">
