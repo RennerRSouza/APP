@@ -1,0 +1,66 @@
+name: iOS Build (ipa sem assinatura)
+
+on:
+  workflow_dispatch:   # permite rodar manualmente pela aba Actions
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências JS
+        run: npm ci
+
+      - name: Instalar Ruby e CocoaPods
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: frontend
+
+      - name: Instalar Pods
+        run: |
+          cd ios
+          bundle exec pod install
+
+      - name: Compilar (sem assinatura)
+        run: |
+          xcodebuild \
+            -workspace ios/YoloCounterApp.xcworkspace \
+            -scheme YoloCounterApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Gerar o .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/YoloCounterApp.app Payload/
+          zip -r YoloCounterApp.ipa Payload
+
+      - name: Salvar o .ipa para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: YoloCounterApp-ipa
+          path: frontend/YoloCounterApp.ipa
