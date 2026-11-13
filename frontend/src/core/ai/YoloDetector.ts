@@ -37,11 +37,12 @@ export class YoloDetector implements ObjectDetector {
         }
         finalSource = `file://${destPath}`;
       } else {
-        // iOS release: o Metro empacota o .tflite no bundle.
+        // iOS release: passa o require diretamente para a react-native-fast-tflite
+        // resolver o recurso empacotado no bundle nativo do iOS.
         const modelAsset = require('../../../assets/models/yolo.tflite');
-        const assetInfo = Image.resolveAssetSource(modelAsset);
-        if (!assetInfo?.uri) throw new Error('Modelo não resolvido no iOS.');
-        finalSource = assetInfo.uri;
+        const m = await loadTensorflowModel(modelAsset, []);
+        this.model = m;
+        return m;
       }
 
       if (!finalSource) throw new Error('Caminho do modelo vazio.');
