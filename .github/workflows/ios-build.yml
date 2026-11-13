@@ -17,6 +17,17 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Verificar modelo (LFS)
+        run: |
+          SIZE=$(wc -c < assets/models/yolo.tflite)
+          echo "yolo.tflite: $SIZE bytes"
+          if [ "$SIZE" -lt 1000000 ]; then
+            echo "::error::yolo.tflite parece um ponteiro do Git LFS, não o modelo real"
+            exit 1
+          fi
 
       - name: Instalar Node
         uses: actions/setup-node@v4
