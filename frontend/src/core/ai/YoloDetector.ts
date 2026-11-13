@@ -36,7 +36,16 @@ export class YoloDetector implements ObjectDetector {
           await RNFS.copyFileAssets('yolo.tflite', destPath);
         }
         finalSource = `file://${destPath}`;
+      } else {
+        // iOS release: passa o require diretamente para a react-native-fast-tflite
+        // resolver o recurso empacotado no bundle nativo do iOS.
+        const modelAsset = require('../../../assets/models/yolo.tflite');
+        const m = await loadTensorflowModel(modelAsset, []);
+        this.model = m;
+        return m;
       }
+
+      if (!finalSource) throw new Error('Caminho do modelo vazio.');
 
       const m = await loadTensorflowModel({ url: finalSource }, []);
       this.model = m;
@@ -45,6 +54,7 @@ export class YoloDetector implements ObjectDetector {
 
     return this.loading;
   }
+
 
   async detect(imageUri: string): Promise<Detection[]> {
     if (!__DEV__) {
