@@ -1,0 +1,28 @@
+# Dependências locais (serão instaladas do zero via npm ci no container)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Pastas nativas e builds pesados (não são necessários para Lint, TSC e Jest)
+android/
+ios/
+.gradle/
+build/
+*.apk
+*.aab
+*.ipa
+
+# Caches de ferramentas e testes
+.metro-health-check*
+.expo/
+coverage/
+.jest/
+
+# Controle de versão, ambientes e arquivos de IDE
+.git/
+.gitignore
+.env
+.env.*
+.vscode/
+.idea/
+*.log

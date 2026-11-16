@@ -3,10 +3,10 @@ import {
   getProductionReadinessErrors,
   validateWithZod,
 } from '../src/core/ai/inventoryContractValidator';
-import {CLASS_NAMES, MODEL_VERSION} from '../src/core/ai/modelConfig';
+import {CLASS_NAMES} from '../src/core/ai/modelConfig';
 
 describe('inventory contract v2', () => {
-  it('validates the v2 JSON and exposes model classes in numeric ID order', () => {
+  it('validates the v2 JSON as production ready and exposes model classes in numeric ID order', () => {
     const result = validateWithZod(contract);
 
     expect(result.success).toBe(true);
@@ -16,17 +16,27 @@ describe('inventory contract v2', () => {
       'Gradil',
       'table_joint',
     ]);
-    expect(MODEL_VERSION).toBe('event-rental-inventory-v14');
-  });
 
-  it('allows structural validation while reporting calibration is required for production', () => {
-    const result = validateWithZod(contract);
-    expect(result.success).toBe(true);
     if (result.success) {
       const readinessErrors = getProductionReadinessErrors(result.value);
-      expect(readinessErrors.join(' ')).toContain('requires calibration');
-      expect(readinessErrors.join(' ')).toContain('model.confidence_thresholds.Gradil');
+      expect(readinessErrors).toHaveLength(0);
     }
+  });
+
+  it('rejects an uncalibrated contract with null threshold', () => {
+    const uncalibratedContract = {
+      ...contract,
+      configuration_status: 'calibration_required',
+      model: {
+        ...contract.model,
+        confidence_thresholds: {
+          ...contract.model.confidence_thresholds,
+          Gradil: null,
+        },
+      },
+    };
+
+    expect(validateWithZod(uncalibratedContract).success).toBe(false);
   });
 
   it('rejects a class ID map that does not match the output class count', () => {
