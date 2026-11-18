@@ -31,6 +31,9 @@ export function ResultScreen({ route, navigation }: Props) {
     setJustificativa,
     divergenciaPercentual,
     exigeJustificativa,
+    detections,
+    adicionarMarcador,
+    removerMarcador,
   } = useContagemFlow(imageUri);
 
   const onSalvar = async () => {
@@ -79,11 +82,16 @@ export function ResultScreen({ route, navigation }: Props) {
         <View style={styles.imageWrapper}>
           <DetectionOverlay 
             uri={imageUri} 
-            detections={resultado.detections} 
+            detections={detections}
+            onAdicionarMarcador={adicionarMarcador}
+            onRemoverMarcador={removerMarcador}
             cameraPitch={cameraPitch} 
             cameraRoll={cameraRoll} 
           />
         </View>
+        <Text style={styles.muted}>
+          Toque em um ponto para removê-lo ou em uma área vazia para adicionar.
+        </Text>
         <Text style={styles.label}>Ajuste manual da contagem total:</Text>
         <View style={styles.row}>
           <PrimaryButton label="−" onPress={() => ajustar(-1)} variant="ghost" />

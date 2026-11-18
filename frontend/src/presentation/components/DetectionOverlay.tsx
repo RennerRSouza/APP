@@ -3,12 +3,21 @@ import { View, StyleSheet, Image } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Detection } from '../../domain/entities/Detection';
+import {
+  RAIO_TOQUE_PX,
+  encontrarMarcadorNoToque,
+  normalizarToque,
+} from '../../core/utils/marcadores';
 
 interface DetectionOverlayProps {
   uri: string;
   detections: Detection[];
   cameraPitch?: number | null;
   cameraRoll?: number | null;
+  /** Toque em área vazia: coordenadas normalizadas [0,1]. */
+  onAdicionarMarcador?: (x: number, y: number) => void;
+  /** Toque em marcador existente: índice na lista `detections`. */
+  onRemoverMarcador?: (index: number) => void;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -16,6 +25,7 @@ const COLOR_MAP: Record<string, string> = {
   'Black-Fold-Table': '#FF3B30',
   'Brown-Fold-Table': '#007AFF',
   'Gradil': '#FF9500',
+  'manual': '#AF52DE',
 };
 
 const DEFAULT_COLOR = '#FFD700';
@@ -24,6 +34,8 @@ const MARKER_SIZE = 14;
 export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
   uri,
   detections,
+  onAdicionarMarcador,
+  onRemoverMarcador,
 }) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -46,8 +58,33 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
   const scaleX = imgLayout.width > 0 ? imgLayout.width : 400;
   const scaleY = imgLayout.height > 0 ? imgLayout.height : 400;
 
+  // Toque simples: remove o marcador sob o dedo ou, em área vazia, adiciona um novo.
+  // Race com o pinch: se dois dedos entram e o zoom ativa, o toque é cancelado.
+  const tapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .maxDuration(250)
+    .maxDistance(12)
+    .onEnd((e, success) => {
+      if (!success) {
+        return;
+      }
+      // Com zoom, o mesmo dedo cobre menos pixels da imagem: reduz o raio de acerto.
+      const raio = RAIO_TOQUE_PX / Math.max(scale.value, 1);
+      const indice = encontrarMarcadorNoToque(detections, e.x, e.y, scaleX, scaleY, raio);
+      if (indice >= 0) {
+        onRemoverMarcador?.(indice);
+        return;
+      }
+      const ponto = normalizarToque(e.x, e.y, scaleX, scaleY);
+      if (ponto) {
+        onAdicionarMarcador?.(ponto.x, ponto.y);
+      }
+    });
+
+  const gesture = Gesture.Race(pinchGesture, tapGesture);
+
   return (
-    <GestureDetector gesture={pinchGesture}>
+    <GestureDetector gesture={gesture}>
       <Animated.View 
         style={[styles.container, animatedStyle]}
         onLayout={(e) => {
