@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
@@ -8,6 +8,8 @@ import {
   encontrarMarcadorNoToque,
   normalizarToque,
 } from '../../core/utils/marcadores';
+import { calcularTamanhoMarcador } from '../../core/ai/markerScale';
+
 
 interface DetectionOverlayProps {
   uri: string;
@@ -29,14 +31,16 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 const DEFAULT_COLOR = '#FFD700';
-const MARKER_SIZE = 14;
 
 export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
   uri,
   detections,
   onAdicionarMarcador,
   onRemoverMarcador,
+  cameraPitch,
 }) => {
+  // POS-S3-13: tamanho do ponto central depende da inclinação do celular
+  const markerSize = useMemo(() => calcularTamanhoMarcador(cameraPitch), [cameraPitch]);
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const [imgLayout, setImgLayout] = useState({ width: 0, height: 0 });
@@ -113,8 +117,11 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({
                 style={[
                   styles.detectionMarker,
                   {
-                    left: centerX - MARKER_SIZE / 2,
-                    top: centerY - MARKER_SIZE / 2,
+                    width: markerSize,
+                    height: markerSize,
+                    borderRadius: markerSize / 2,
+                    left: centerX - markerSize / 2,
+                    top: centerY - markerSize / 2,
                     backgroundColor: color,
                   }
                 ]}
@@ -137,9 +144,6 @@ const styles = StyleSheet.create({
   },
   detectionMarker: {
     position: 'absolute',
-    width: MARKER_SIZE,
-    height: MARKER_SIZE,
-    borderRadius: MARKER_SIZE / 2,
     borderWidth: 2,
     borderColor: '#fff',
     zIndex: 999, 

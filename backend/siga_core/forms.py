@@ -8,9 +8,9 @@ from .models import (
     ParametrosLocacao, SolicitacaoInteresse, NotificacaoInterna
 )
 
-# ==============================================================================
+
 # ONBOARDING (EMPRESA + GESTOR)
-# ==============================================================================
+
 class CadastroEmpresaForm(forms.Form):
     razao_social = forms.CharField(max_length=255, label="Razão social")
     subdominio = forms.SlugField(
@@ -61,9 +61,8 @@ class CadastroEmpresaForm(forms.Form):
         return cleaned
 
 
-# ==============================================================================
 # CATÁLOGO DE ATIVOS (UC03)
-# ==============================================================================
+
 class ClasseAtivoForm(forms.ModelForm):
     class Meta:
         model = ClasseAtivo
@@ -89,9 +88,9 @@ class ClasseAtivoForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'form-control')
 
 
-# ==============================================================================
-# REGRAS OPERACIONAIS MOBILE (UC02 / UML RegraOperacionalForm)
-# ==============================================================================
+
+# REGRAS OPERACIONAIS MOBILE (UC02)
+
 class RegraOperacionalForm(forms.ModelForm):
     class Meta:
         model = RegraOperacionalMobile
@@ -119,9 +118,7 @@ class RegraOperacionalForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-check-input')
 
 
-# ==============================================================================
 # GESTÃO DE USUÁRIOS E EQUIPE (UC01)
-# ==============================================================================
 class UsuarioCreateForm(forms.Form):
     first_name = forms.CharField(max_length=150, label="Nome")
     last_name = forms.CharField(max_length=150, label="Sobrenome")
@@ -170,9 +167,7 @@ class UsuarioCreateForm(forms.Form):
             raise ValidationError("Este nome de usuário já está em uso.")
         return u
 
-# ==============================================================================
-# PILAR 1: VITRINE PARAMETRIZADA & MANIFESTAÇÃO DE INTERESSE (RFQ)
-# ==============================================================================
+# VITRINE PARAMETRIZADA & MANIFESTAÇÃO DE INTERESSE (RFQ)
 class ParametrosLocacaoForm(forms.ModelForm):
     class Meta:
         model = ParametrosLocacao
@@ -237,9 +232,7 @@ class SolicitacaoInteresseForm(forms.ModelForm):
         return cleaned
 
 
-# ==============================================================================
-# PILAR 2: COMUNICADOS E NOTIFICAÇÕES INTERNAS (NETWORKING)
-# ==============================================================================
+# COMUNICADOS E NOTIFICAÇÕES INTERNAS
 class NotificacaoInternaForm(forms.ModelForm):
     class Meta:
         model = NotificacaoInterna
