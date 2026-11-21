@@ -1,5 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {container} from '../../core/di/container';
+import {criarMarcadorManual} from '../../core/utils/marcadores';
+import {Detection} from '../../domain/entities/Detection';
 import {ResultadoContagem} from '../../domain/usecases/ContarObjetos';
 
 type State =
@@ -12,16 +14,20 @@ export function useContagemFlow(imageUri: string) {
   const [confirmado, setConfirmado] = useState(0);
   const [justificativa, setJustificativa] = useState('');
   const [saving, setSaving] = useState(false);
+  // Marcadores editáveis na tela (começam com o que o YOLO detectou)
+  const [detections, setDetections] = useState<Detection[]>([]);
 
   useEffect(() => {
     let cancelled = false; // evita setState após desmontar
     setState({status: 'processing'});
+    setDetections([]);
     container.contarObjetos
       .execute(imageUri)
       .then(resultado => {
         if (cancelled) {
           return;
         }
+        setDetections(resultado.detections);
         setConfirmado(resultado.total);
         setState({status: 'done', resultado});
       })
@@ -32,6 +38,18 @@ export function useContagemFlow(imageUri: string) {
   }, [imageUri]);
 
   const ajustar = useCallback((delta: number) => setConfirmado(v => Math.max(0, v + delta)), []);
+
+  // Toque em área vazia (falso negativo): +1 marcador e +1 no total confirmado
+  const adicionarMarcador = useCallback((x: number, y: number) => {
+    setDetections(prev => [...prev, criarMarcadorManual(x, y)]);
+    setConfirmado(v => v + 1);
+  }, []);
+
+  // Toque em marcador existente (falso positivo): -1 marcador e -1 no total confirmado
+  const removerMarcador = useCallback((index: number) => {
+    setDetections(prev => prev.filter((_, i) => i !== index));
+    setConfirmado(v => Math.max(0, v - 1));
+  }, []);
 
   // Cálculo da divergência percentual entre IA e operador
   const totalIA = state.status === 'done' ? state.resultado.total : 0;
@@ -75,5 +93,8 @@ export function useContagemFlow(imageUri: string) {
     setJustificativa,
     divergenciaPercentual,
     exigeJustificativa,
+    detections,
+    adicionarMarcador,
+    removerMarcador,
   };
 }
