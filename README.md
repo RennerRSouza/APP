@@ -33,7 +33,70 @@ siga/
 
 * **Node.js:** `>= 22.11.0`
 * **Docker & Docker Compose:** v2+
-* **Ambiente Nativo Android:** JDK 17, Android Studio, Android SDK e Emulador ou dispositivo físico com Depuração USB ativada
+* **JDK:** Versão **17**
+* **Android Studio:** Com SDK, NDK e CMake configurados (passo a passo abaixo)
+
+---
+
+## Configuração do Ambiente Android
+
+### Instalar o Android Studio e o JDK 17
+1. Instale o [Android Studio](https://developer.android.com/studio).
+2. Instale o **JDK 17** e confirme no terminal:
+   ```bash
+   java -version
+   ```
+
+### Baixar as Plataformas e Ferramentas no SDK Manager
+1. Abra o Android Studio. Na tela inicial, clique em **Settings** > **Languages & Frameworks** > **Android SDK**.
+2. Na aba **SDK Platforms**, expanda **Android 17.0 ("CinnamonBun" - API Level 37)** e marque:
+   * `Android SDK Platform 37`
+   * `Sources for Android 37`
+   * `Google APIs Intel x86_64 Atom System Image`
+3. Mude para a aba **SDK Tools** e selecione:
+   * **Android SDK Build-Tools** (versão `37.0.0` ou a mais recente)
+   * **NDK (Side by side)**
+   * **CMake**
+   * **Android SDK Command-line Tools (latest)**
+   * **Android Emulator**
+   * **Android SDK Platform-Tools**
+4. Clique em **Apply** > **OK**.
+
+### Configurar as Variáveis de Ambiente
+Adicione a variável `ANDROID_HOME` e os caminhos das ferramentas ao `Path` do seu sistema operacional:
+
+* **Windows (Variáveis de Ambiente do Sistema):**
+  * Crie uma nova variável de usuário chamada `ANDROID_HOME` com o valor:
+    ```text
+    %LOCALAPPDATA%\Android\Sdk
+    ```
+  * Edite a variável `Path` e adicione as três entradas abaixo:
+    ```text
+    %ANDROID_HOME%\platform-tools
+    %ANDROID_HOME%\emulator
+    %ANDROID_HOME%\cmdline-tools\latest\bin
+    ```
+  * Reabra o terminal e valide com `adb --version`.
+
+* **Linux / macOS (`~/.bashrc`):**
+  ```bash
+  export ANDROID_HOME=$HOME/Android/Sdk   # No macOS use: $HOME/Library/Android/sdk
+  export PATH=$PATH:$ANDROID_HOME/emulator
+  export PATH=$PATH:$ANDROID_HOME/platform-tools
+  export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+  ```
+  * Recarregue o perfil (`source ~/.zshrc`) e valide com `adb --version`.
+
+  ### Preparar o Dispositivo de Teste
+* **Opção A — Celular Físico:**
+  2. Acesse **Opções do desenvolvedor** e ative a **Depuração USB**.
+  3. Conecte o cabo USB, aceite a chave RSA na tela do aparelho e confirme a conexão no terminal:
+     ```bash
+     adb devices
+     ```
+* **Opção B — Emulador Virtual (AVD):**
+  1. No Android Studio, abra **Device Manager**.
+  2. Clique em **Create Device**, escolha um perfil de hardware (ex:**Pixel 10**), selecione a imagem de sistema **API 37** e clique em **Finish**.
 
 ---
 
@@ -86,6 +149,6 @@ npm run android
 ```bash
 # Construir a imagem de validação (necessário apenas ao alterar package.json)
 docker compose --profile test build --no-cache frontend-check
-# Rodar a bateria completa (Lint + TypeCheck)
+# Rodar validadores (Lint + TypeCheck)
 docker compose --profile test run --rm frontend-check
 ```
